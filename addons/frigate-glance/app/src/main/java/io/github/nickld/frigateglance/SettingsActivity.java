@@ -211,8 +211,13 @@ public class SettingsActivity extends Activity {
             default:
                 row("Dismiss key", "The remote button that closes a card. It only does this while a card is up. OK, then press it.",
                         CardText.key(c.dismissKey), () -> pickKey("Dismiss", "dismissKey", others(c, "Dismiss")));
+                row("Hold to dismiss", "Dismiss only when the button is held for a moment, so a quick press while"
+                        + " moving around an app does nothing.", onOff(c.dismissHold),
+                        () -> save(cfg -> store.saveSetting("dismissHold", !cfg.dismissHold)));
                 row("Snooze key", "The remote button that closes a card and keeps cards away for the snooze length."
                         + " OK, then press it.", CardText.key(c.snoozeKey), () -> pickKey("Snooze", "snoozeKey", others(c, "Snooze")));
+                row("Hold to snooze", "Snooze only when the button is held for a moment.", onOff(c.snoozeHold),
+                        () -> save(cfg -> store.saveSetting("snoozeHold", !cfg.snoozeHold)));
                 row("Snooze length", "How long a snooze lasts, from the remote or from Overview.", CardText.duration(c.snoozeMinutes), () -> save(cfg -> store.saveSetting(
                         "snoozeMinutes", SettingsModel.next(SettingsModel.SNOOZE_MINUTES, cfg.snoozeMinutes))));
                 divider();
@@ -233,6 +238,8 @@ public class SettingsActivity extends Activity {
                 if (c.fullscreen) {
                     row("Full screen key", "The remote button that opens the card's camera full screen. OK, then press it.",
                             CardText.key(c.fullscreenKey), () -> pickKey("Full screen", "fullscreenKey", others(c, "Full screen")));
+                    row("Hold for full screen", "Open full screen only when the button is held for a moment.",
+                            onOff(c.fullscreenHold), () -> save(cfg -> store.saveSetting("fullscreenHold", !cfg.fullscreenHold)));
                 }
                 break;
         }

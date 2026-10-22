@@ -40,6 +40,8 @@ public final class GlanceConfig {
     /** A third card key opens the camera full screen; off by default. */
     public final boolean fullscreen;
     public final String fullscreenKey;
+    /** Keys that act only when held (KeyRules.HOLD_MS), against accidental presses while moving around an app. */
+    public final boolean dismissHold, snoozeHold, fullscreenHold;
 
     private final JSONObject source;
 
@@ -63,6 +65,9 @@ public final class GlanceConfig {
         snoozeKey = key(o, "snoozeKey", "KEYCODE_DPAD_RIGHT");
         if (dismissKey.equals(snoozeKey)) throw new IllegalArgumentException("dismissKey and snoozeKey are the same key");
         fullscreen = o.optBoolean("fullscreen", false);
+        dismissHold = o.optBoolean("dismissHold", false);
+        snoozeHold = o.optBoolean("snoozeHold", false);
+        fullscreenHold = o.optBoolean("fullscreenHold", false);
         fullscreenKey = key(o, "fullscreenKey", "KEYCODE_DPAD_UP");
         if (fullscreen && (fullscreenKey.equals(dismissKey) || fullscreenKey.equals(snoozeKey))) {
             throw new IllegalArgumentException("fullscreenKey is the same key as dismissKey or snoozeKey");
@@ -125,6 +130,9 @@ public final class GlanceConfig {
             o.put("snoozeKey", snoozeKey);
             o.put("fullscreen", fullscreen);
             o.put("fullscreenKey", fullscreenKey);
+            o.put("dismissHold", dismissHold);
+            o.put("snoozeHold", snoozeHold);
+            o.put("fullscreenHold", fullscreenHold);
             return o.toString();
         } catch (JSONException e) {
             throw new IllegalStateException(e);

@@ -192,4 +192,13 @@ public class GlanceConfigTest {
     public void fullscreenKeyMayNotBeOk() {
         GlanceConfig.parse(requiredPlus("\"fullscreenKey\":\"KEYCODE_DPAD_CENTER\""));
     }
+
+    @Test
+    public void holdIsOffForEveryKeyByDefault() {
+        GlanceConfig c = GlanceConfig.parse("{" + REQUIRED + "}");
+        assertFalse(c.dismissHold);
+        assertFalse(c.snoozeHold);
+        assertFalse(c.fullscreenHold);
+        assertTrue(GlanceConfig.parse(requiredPlus("\"snoozeHold\":true")).snoozeHold);
+    }
 }

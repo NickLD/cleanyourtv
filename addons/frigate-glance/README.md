@@ -74,6 +74,7 @@ and `TestCardReceiver` shows a test card over whatever is playing.
 | `rtspUser`, `rtspPassword` | empty | go2rtc RTSP credentials, if set |
 | `boxes` | `true` | boxes around detected objects |
 | `fullscreen`, `fullscreenKey` | `false`, `KEYCODE_DPAD_UP` | a third card key that opens the camera full screen; Back returns |
+| `dismissHold`, `snoozeHold`, `fullscreenHold` | `false` | that key acts only when held for 0.6 s; a quick press does nothing |
 | `dismissKey`, `snoozeKey` | `KEYCODE_DPAD_LEFT`, `KEYCODE_DPAD_RIGHT` | Android key names; Back, OK and Enter are refused |
 
 ## Live video

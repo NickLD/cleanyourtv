@@ -55,7 +55,7 @@ public class KeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
-        int d = rules.decide(event.getKeyCode(), event.getAction(), showing);
+        int d = rules.decide(event.getKeyCode(), event.getAction(), event.getEventTime(), showing);
         if (d == KeyRules.DISMISS) GlanceService.dismissCard();
         else if (d == KeyRules.SNOOZE) GlanceService.snoozeCard();
         else if (d == KeyRules.FULLSCREEN) GlanceService.openFullscreen();
@@ -84,7 +84,7 @@ public class KeyService extends AccessibilityService {
         if (dismiss == KeyEvent.KEYCODE_UNKNOWN) Log.w(ConfigStore.TAG, "unknown dismissKey " + c.dismissKey);
         if (snooze == KeyEvent.KEYCODE_UNKNOWN) Log.w(ConfigStore.TAG, "unknown snoozeKey " + c.snoozeKey);
         int fullscreen = c.fullscreen ? KeyEvent.keyCodeFromString(c.fullscreenKey) : 0;
-        rules = new KeyRules(dismiss, snooze, fullscreen);
+        rules = new KeyRules(dismiss, snooze, fullscreen, c.dismissHold, c.snoozeHold, c.fullscreenHold);
     }
 
     private void applyFilter() {
