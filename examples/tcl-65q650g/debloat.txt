@@ -2,6 +2,7 @@
 # (client type TCL-NA-RTD51M), firmware V8-R51MT08-LF1V095, Google TV launcher
 # (com.google.android.apps.tv.launcherx), 2 GB RAM, 32-bit userspace.
 # List derived from examples/tcl-43c645 (same R51MT platform), checked against this unit's packages.
+# Same firmware family as examples/tcl-65q550g (a different model, tested over Ethernet there).
 #
 # Tested 2026-10-20 on a real unit, applied in three batches with a screenshot after each: Home, the
 # remote's Input panel (com.tcl.suspension) and Live TV (com.tcl.tv/.TVActivity, all four HDMI ports in
