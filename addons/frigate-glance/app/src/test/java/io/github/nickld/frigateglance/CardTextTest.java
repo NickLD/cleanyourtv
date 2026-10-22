@@ -1,0 +1,36 @@
+package io.github.nickld.frigateglance;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
+public class CardTextTest {
+    @Test
+    public void defaultFooter() {
+        assertEquals("◀ Dismiss · ▶ Snooze 1h", CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60));
+    }
+
+    @Test
+    public void namedKeysAndMinutes() {
+        assertEquals("Menu Dismiss · Info Snooze 30 min", CardText.footer("KEYCODE_MENU", "KEYCODE_INFO", 30));
+    }
+
+    @Test
+    public void colourKeysAndHours() {
+        assertEquals("Red Dismiss · Green Snooze 4h", CardText.footer("KEYCODE_PROG_RED", "KEYCODE_PROG_GREEN", 240));
+    }
+
+    @Test
+    public void unusualKeyNameIsReadable() {
+        assertEquals("Media Play Pause Dismiss · ▼ Snooze 90 min",
+                CardText.footer("KEYCODE_MEDIA_PLAY_PAUSE", "KEYCODE_DPAD_DOWN", 90));
+    }
+
+    @Test
+    public void snoozeLength() {
+        assertEquals("15 min", CardText.duration(15));
+        assertEquals("1h", CardText.duration(60));
+        assertEquals("2h", CardText.duration(120));
+        assertEquals("90 min", CardText.duration(90));
+    }
+}
