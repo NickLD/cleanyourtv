@@ -19,8 +19,6 @@ final class SettingsModel {
     static final List<Integer> DISMISS_SECONDS = List.of(4, 8, 15, 30);
     static final List<Integer> SNOOZE_MINUTES = List.of(15, 30, 60, 120, 240);
     static final List<Integer> CARD_SCALES = List.of(70, 85, 100, 115, 130, 150);
-    static final List<String> KEYS = List.of("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", "KEYCODE_DPAD_UP",
-            "KEYCODE_DPAD_DOWN", "KEYCODE_MENU", "KEYCODE_INFO", "KEYCODE_PROG_RED", "KEYCODE_PROG_GREEN");
 
     private SettingsModel() {}
 
@@ -104,10 +102,6 @@ final class SettingsModel {
         return values.get((i + 1) % values.size());
     }
 
-    static String nextKey(String current, String other) {
-        String k = next(KEYS, current);
-        return k.equals(other) ? next(KEYS, k) : k;
-    }
 
     private static String displayName(GlanceConfig c, String camera) {
         String n = c.cameras.get(camera);

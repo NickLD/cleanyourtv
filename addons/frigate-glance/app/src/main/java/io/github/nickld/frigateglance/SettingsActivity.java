@@ -206,12 +206,10 @@ public class SettingsActivity extends Activity {
                 row("Boxes", "Outlines around the objects Frigate detected, gone when the object leaves.", onOff(c.boxes), () -> save(cfg -> store.saveSetting("boxes", !cfg.boxes)));
                 break;
             default:
-                row("Dismiss key", "The remote button that closes a card. It only does this while a card is up.",
-                        CardText.key(c.dismissKey), () -> save(cfg ->
-                        store.saveSetting("dismissKey", SettingsModel.nextKey(cfg.dismissKey, cfg.snoozeKey))));
-                row("Snooze key", "The remote button that closes a card and keeps cards away for the snooze length.",
-                        CardText.key(c.snoozeKey), () -> save(cfg ->
-                        store.saveSetting("snoozeKey", SettingsModel.nextKey(cfg.snoozeKey, cfg.dismissKey))));
+                row("Dismiss key", "The remote button that closes a card. It only does this while a card is up. OK, then press it.",
+                        CardText.key(c.dismissKey), () -> pickKey("Dismiss", "dismissKey", c.snoozeKey, "Snooze"));
+                row("Snooze key", "The remote button that closes a card and keeps cards away for the snooze length."
+                        + " OK, then press it.", CardText.key(c.snoozeKey), () -> pickKey("Snooze", "snoozeKey", c.dismissKey, "Dismiss"));
                 row("Snooze length", "How long a snooze lasts, from the remote or from Overview.", CardText.duration(c.snoozeMinutes), () -> save(cfg -> store.saveSetting(
                         "snoozeMinutes", SettingsModel.next(SettingsModel.SNOOZE_MINUTES, cfg.snoozeMinutes))));
                 break;
@@ -242,6 +240,11 @@ public class SettingsActivity extends Activity {
                 return;
             }
         }
+    }
+
+    /** Opens the "press the button" window; the button pressed is saved like any other setting. */
+    private void pickKey(String what, String key, String otherKey, String otherName) {
+        new KeyPickerDialog(this, what, otherKey, otherName, name -> save(cfg -> store.saveSetting(key, name))).show();
     }
 
     private interface Change {

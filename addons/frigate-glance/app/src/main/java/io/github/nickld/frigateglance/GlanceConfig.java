@@ -19,7 +19,7 @@ public final class GlanceConfig {
     static final Set<String> CORNERS = Set.of("top-right", "top-left", "bottom-right", "bottom-left");
     static final Set<String> SEVERITIES = Set.of("alerts", "alerts_and_detections");
     /** Keys people press out of habit to control playback; never caught. */
-    static final Set<String> FORBIDDEN_KEYS = Set.of("KEYCODE_BACK", "KEYCODE_DPAD_CENTER", "KEYCODE_ENTER");
+    static final Set<String> FORBIDDEN_KEYS = Set.of("KEYCODE_BACK", "KEYCODE_DPAD_CENTER", "KEYCODE_ENTER", "KEYCODE_HOME");
 
     public final String mqttUrl, frigateUrl, frigateUser, frigatePassword, topicPrefix, rtspUser, rtspPassword;
     public final String corner, severity, dismissKey, snoozeKey;

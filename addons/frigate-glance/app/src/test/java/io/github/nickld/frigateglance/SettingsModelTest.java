@@ -91,12 +91,6 @@ public class SettingsModelTest {
     }
 
     @Test
-    public void keyCycleSkipsTheOtherKey() {
-        assertEquals("KEYCODE_DPAD_UP", SettingsModel.nextKey("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT"));
-        assertEquals("KEYCODE_DPAD_RIGHT", SettingsModel.nextKey("KEYCODE_PROG_GREEN", "KEYCODE_DPAD_LEFT"));
-    }
-
-    @Test
     public void durationsCycle() {
         assertEquals(Integer.valueOf(15), SettingsModel.next(SettingsModel.DISMISS_SECONDS, 8));
         assertEquals(Integer.valueOf(4), SettingsModel.next(SettingsModel.DISMISS_SECONDS, 30));
