@@ -74,6 +74,11 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // A config pushed while this screen was open: take it now and reconnect with it.
+        if (store.importPushed()) {
+            GlanceService.reload(this);
+            build();
+        }
         main.post(refresh);
     }
 
