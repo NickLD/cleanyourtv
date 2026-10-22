@@ -171,6 +171,14 @@ D-pad: lists and toggles only, no text fields.
   try and should be **spiked on the 65Q650G first**: it bypasses Frigate's login and needs that port to
   be reachable. Frigate's authenticated MSE or WebRTC endpoints through `8971` are the alternative.
   Whichever is chosen, the README states what port and credentials it needs.
+- **Spike result (2026-10-21, TCL 65Q650G):** Media3 RTSP over TCP from `rtsp://192.168.4.58:8554/frontdoooor_1`
+  plays with the hardware decoder (`OMX.realtek.video.decoder`); first frame after 2.6 s, `STATE_READY` after
+  4.0 s, about 54 MB PSS while playing. That stream is the camera's 2560x1920 main stream and the decoder
+  drops frames on it. Decision: RTSP live video stays, "playing" means first frame rendered, and a
+  `streams` config key (camera to go2rtc stream name) lets an owner point the card at a lighter stream.
+  The owner's cameras have 640x480 detect sub-streams that go2rtc does not publish yet; publishing them
+  is a Frigate change for the owner. This TV's screencap does not capture the video layer, so live video is
+  checked by eye.
 - Snapshot endpoint, card dimensions and animation, the card's art and accent colour, package name
   (something owned by the author, not `com.gathin`).
 - Where reasonable, unit tests for message parsing and filtering, which can run without a TV.
