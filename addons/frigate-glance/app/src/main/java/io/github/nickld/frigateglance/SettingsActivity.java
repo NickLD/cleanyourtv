@@ -129,19 +129,20 @@ public class SettingsActivity extends Activity {
         waitingForFrigate = frigate == null;
         switch (SECTIONS[section]) {
             case "Overview":
-                snoozeRow = row("Snooze", "", () -> {
+                snoozeRow = row("Snooze", "No cards from any camera for the snooze length (Remote section). OK again resumes.", "", () -> {
                     if (GlanceService.snoozedUntilWallClock() > 0) GlanceService.resume();
                     else GlanceService.snoozeCard();
                     main.postDelayed(this::updateLive, 200);
                 });
-                row("Show a test card", "", () -> GlanceService.showTestCard(this, null));
+                row("Show a test card", "Shows a card now, to check where it sits and that the remote buttons work.", "", () -> GlanceService.showTestCard(this, null));
                 break;
             case "Cameras":
                 List<String> cameras = SettingsModel.cameraNames(frigate);
                 if (cameras.isEmpty()) rows.addView(new SettingRow(this, "Cameras", "waiting for Frigate", null));
                 for (String cam : cameras) {
                     String name = c.cameras.containsKey(cam) ? c.cameras.get(cam) : CardController.pretty(cam);
-                    row(name, onOff(SettingsModel.cameraOn(c, cam)), () -> save(cfg -> {
+                    row(name, "Alerts from the " + CardController.pretty(cam).toLowerCase(java.util.Locale.ROOT) + " camera open a card.",
+                            onOff(SettingsModel.cameraOn(c, cam)), () -> save(cfg -> {
                         try {
                             store.saveSetting("cameras", SettingsModel.toggleCamera(cfg, cameras, cam));
                         } catch (JSONException ignored) {
@@ -151,29 +152,36 @@ public class SettingsActivity extends Activity {
                 }
                 break;
             case "Alerts":
-                row("Show", "alerts".equals(c.severity) ? "Alerts only" : "Alerts and detections", () -> save(cfg ->
+                row("Show", "Alerts are what Frigate's review settings mark as important (zones, objects). Detections"
+                        + " are everything else it tracks, such as cars passing on the street.",
+                        "alerts".equals(c.severity) ? "Alerts only" : "Alerts and detections", () -> save(cfg ->
                         store.saveSetting("severity", SettingsModel.next(SettingsModel.SEVERITIES, cfg.severity))));
                 List<String> labels = SettingsModel.labelNames(frigate);
                 if (labels.isEmpty()) rows.addView(new SettingRow(this, "Objects", "waiting for Frigate", null));
                 for (String label : labels) {
-                    row(CardController.pretty(label), onOff(SettingsModel.labelOn(c, label)),
+                    row(CardController.pretty(label), "Alerts with this object open a card.",
+                            onOff(SettingsModel.labelOn(c, label)),
                             () -> save(cfg -> store.saveSetting("labels", SettingsModel.toggleLabel(cfg, labels, label))));
                 }
                 break;
             case "Card":
-                row("Corner", CORNER_NAMES.get(c.corner),
+                row("Corner", "Which corner of the screen the card slides into.", CORNER_NAMES.get(c.corner),
                         () -> save(cfg -> store.saveSetting("corner", SettingsModel.next(SettingsModel.CORNERS, cfg.corner))));
-                row("Card stays", c.dismissSeconds + " s after the event", () -> save(cfg -> store.saveSetting(
+                row("Card stays", "How long the card stays once the event has ended, while the bar on top runs down.",
+                        c.dismissSeconds + " s", () -> save(cfg -> store.saveSetting(
                         "dismissSeconds", SettingsModel.next(SettingsModel.DISMISS_SECONDS, cfg.dismissSeconds))));
-                row("Live video", onOff(c.liveVideo), () -> save(cfg -> store.saveSetting("liveVideo", !cfg.liveVideo)));
-                row("Boxes", onOff(c.boxes), () -> save(cfg -> store.saveSetting("boxes", !cfg.boxes)));
+                row("Live video", "Moving picture from the camera. Off, or while another app plays sound, a snapshot every second instead.",
+                        onOff(c.liveVideo), () -> save(cfg -> store.saveSetting("liveVideo", !cfg.liveVideo)));
+                row("Boxes", "Outlines around the objects Frigate detected, gone when the object leaves.", onOff(c.boxes), () -> save(cfg -> store.saveSetting("boxes", !cfg.boxes)));
                 break;
             default:
-                row("Dismiss key", CardText.key(c.dismissKey), () -> save(cfg ->
+                row("Dismiss key", "The remote button that closes a card. It only does this while a card is up.",
+                        CardText.key(c.dismissKey), () -> save(cfg ->
                         store.saveSetting("dismissKey", SettingsModel.nextKey(cfg.dismissKey, cfg.snoozeKey))));
-                row("Snooze key", CardText.key(c.snoozeKey), () -> save(cfg ->
+                row("Snooze key", "The remote button that closes a card and keeps cards away for the snooze length.",
+                        CardText.key(c.snoozeKey), () -> save(cfg ->
                         store.saveSetting("snoozeKey", SettingsModel.nextKey(cfg.snoozeKey, cfg.dismissKey))));
-                row("Snooze length", CardText.duration(c.snoozeMinutes), () -> save(cfg -> store.saveSetting(
+                row("Snooze length", "How long a snooze lasts, from the remote or from Overview.", CardText.duration(c.snoozeMinutes), () -> save(cfg -> store.saveSetting(
                         "snoozeMinutes", SettingsModel.next(SettingsModel.SNOOZE_MINUTES, cfg.snoozeMinutes))));
                 break;
         }
@@ -228,8 +236,8 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    private SettingRow row(String name, String value, Runnable onClick) {
-        SettingRow r = new SettingRow(this, name, value, onClick);
+    private SettingRow row(String name, String description, String value, Runnable onClick) {
+        SettingRow r = new SettingRow(this, name, description, value, onClick);
         rows.addView(r, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return r;
     }
