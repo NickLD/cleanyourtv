@@ -51,4 +51,16 @@ public class KeyRulesTest {
         assertEquals(KeyRules.PASS, none.decide(0, DOWN, true));
         assertEquals(KeyRules.PASS, none.decide(LEFT, DOWN, true));
     }
+
+    @Test
+    public void fullscreenKeyActsOnUpWhenSet() {
+        KeyRules r = new KeyRules(LEFT, RIGHT, UP);
+        assertEquals(KeyRules.SWALLOW, r.decide(UP, DOWN, true));
+        assertEquals(KeyRules.FULLSCREEN, r.decide(UP, UPA, true));
+    }
+
+    @Test
+    public void upPassesWhenFullscreenIsOff() {
+        assertEquals(KeyRules.PASS, rules.decide(UP, DOWN, true));
+    }
 }

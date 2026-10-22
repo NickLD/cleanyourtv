@@ -207,11 +207,30 @@ public class SettingsActivity extends Activity {
                 break;
             default:
                 row("Dismiss key", "The remote button that closes a card. It only does this while a card is up. OK, then press it.",
-                        CardText.key(c.dismissKey), () -> pickKey("Dismiss", "dismissKey", c.snoozeKey, "Snooze"));
+                        CardText.key(c.dismissKey), () -> pickKey("Dismiss", "dismissKey", others(c, "Dismiss")));
                 row("Snooze key", "The remote button that closes a card and keeps cards away for the snooze length."
-                        + " OK, then press it.", CardText.key(c.snoozeKey), () -> pickKey("Snooze", "snoozeKey", c.dismissKey, "Dismiss"));
+                        + " OK, then press it.", CardText.key(c.snoozeKey), () -> pickKey("Snooze", "snoozeKey", others(c, "Snooze")));
                 row("Snooze length", "How long a snooze lasts, from the remote or from Overview.", CardText.duration(c.snoozeMinutes), () -> save(cfg -> store.saveSetting(
                         "snoozeMinutes", SettingsModel.next(SettingsModel.SNOOZE_MINUTES, cfg.snoozeMinutes))));
+                divider();
+                row("Full screen", "A third card key that opens the camera full screen. Back returns to what was playing.",
+                        onOff(c.fullscreen), () -> save(cfg -> {
+                            if (!cfg.fullscreen) {
+                                // Its key must differ from the other two: take the first free one if it clashes.
+                                for (String k : new String[] {cfg.fullscreenKey, "KEYCODE_DPAD_UP", "KEYCODE_DPAD_DOWN",
+                                        "KEYCODE_MENU", "KEYCODE_PROG_RED", "KEYCODE_PROG_GREEN"}) {
+                                    if (!k.equals(cfg.dismissKey) && !k.equals(cfg.snoozeKey)) {
+                                        store.saveSetting("fullscreenKey", k);
+                                        break;
+                                    }
+                                }
+                            }
+                            store.saveSetting("fullscreen", !cfg.fullscreen);
+                        }));
+                if (c.fullscreen) {
+                    row("Full screen key", "The remote button that opens the card's camera full screen. OK, then press it.",
+                            CardText.key(c.fullscreenKey), () -> pickKey("Full screen", "fullscreenKey", others(c, "Full screen")));
+                }
                 break;
         }
         // Left from any row goes back to this section's menu item; Right from the menu enters at the first row.
@@ -243,8 +262,17 @@ public class SettingsActivity extends Activity {
     }
 
     /** Opens the "press the button" window; the button pressed is saved like any other setting. */
-    private void pickKey(String what, String key, String otherKey, String otherName) {
-        new KeyPickerDialog(this, what, otherKey, otherName, name -> save(cfg -> store.saveSetting(key, name))).show();
+    private void pickKey(String what, String key, Map<String, String> others) {
+        new KeyPickerDialog(this, what, others, name -> save(cfg -> store.saveSetting(key, name))).show();
+    }
+
+    /** The card keys other than this one, by name, for the picker's "already the ... key" check. */
+    private static Map<String, String> others(GlanceConfig c, String self) {
+        Map<String, String> m = new java.util.LinkedHashMap<>();
+        if (!self.equals("Dismiss")) m.put("Dismiss", c.dismissKey);
+        if (!self.equals("Snooze")) m.put("Snooze", c.snoozeKey);
+        if (c.fullscreen && !self.equals("Full screen")) m.put("Full screen", c.fullscreenKey);
+        return m;
     }
 
     private interface Change {

@@ -120,6 +120,11 @@ public final class CardController {
         return snoozedUntil > clock.getAsLong() ? snoozedUntil : 0;
     }
 
+    /** The camera of the card on screen, or null. */
+    public String shownCamera() {
+        return shown == null ? null : shown.camera;
+    }
+
     public boolean isShowing() {
         return shown != null;
     }

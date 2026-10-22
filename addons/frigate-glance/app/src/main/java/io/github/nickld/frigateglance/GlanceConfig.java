@@ -37,6 +37,9 @@ public final class GlanceConfig {
     /** Card size in percent of the standard card (picture, text and bar together). */
     public final int cardScale;
     public final boolean liveVideo, boxes;
+    /** A third card key opens the camera full screen; off by default. */
+    public final boolean fullscreen;
+    public final String fullscreenKey;
 
     private final JSONObject source;
 
@@ -59,6 +62,11 @@ public final class GlanceConfig {
         dismissKey = key(o, "dismissKey", "KEYCODE_DPAD_LEFT");
         snoozeKey = key(o, "snoozeKey", "KEYCODE_DPAD_RIGHT");
         if (dismissKey.equals(snoozeKey)) throw new IllegalArgumentException("dismissKey and snoozeKey are the same key");
+        fullscreen = o.optBoolean("fullscreen", false);
+        fullscreenKey = key(o, "fullscreenKey", "KEYCODE_DPAD_UP");
+        if (fullscreen && (fullscreenKey.equals(dismissKey) || fullscreenKey.equals(snoozeKey))) {
+            throw new IllegalArgumentException("fullscreenKey is the same key as dismissKey or snoozeKey");
+        }
         cameras = cameras(o.optJSONObject("cameras"));
         streams = cameras(o.optJSONObject("streams"));
         camerasOff = labels(o.optJSONArray("camerasOff"));
@@ -115,6 +123,8 @@ public final class GlanceConfig {
             o.put("boxes", boxes);
             o.put("dismissKey", dismissKey);
             o.put("snoozeKey", snoozeKey);
+            o.put("fullscreen", fullscreen);
+            o.put("fullscreenKey", fullscreenKey);
             return o.toString();
         } catch (JSONException e) {
             throw new IllegalStateException(e);

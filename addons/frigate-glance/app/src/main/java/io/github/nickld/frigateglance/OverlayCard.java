@@ -245,7 +245,8 @@ final class OverlayCard implements CardView {
         t.setSpan(new ForegroundColorSpan(0xFFFFFFFF), 0, t.length(), 0);
         if (!m.detail.isEmpty()) t.append("  ").append(m.detail);
         info.setText(t);
-        footer.setText(CardText.footer(config.dismissKey, config.snoozeKey, config.snoozeMinutes));
+        footer.setText(CardText.footer(config.dismissKey, config.snoozeKey, config.snoozeMinutes,
+                config.fullscreen ? config.fullscreenKey : null));
         boxes.setBoxes(config.boxes ? m.boxes : null);
         updateTimerBar(m.countdownMs);
     }

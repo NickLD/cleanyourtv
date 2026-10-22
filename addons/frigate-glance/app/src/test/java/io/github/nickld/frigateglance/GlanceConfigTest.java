@@ -175,4 +175,21 @@ public class GlanceConfigTest {
         assertEquals(50, GlanceConfig.parse(requiredPlus("\"cardScale\":10")).cardScale);
         assertEquals(200, GlanceConfig.parse(requiredPlus("\"cardScale\":900")).cardScale);
     }
+
+    @Test
+    public void fullscreenIsOffByDefaultWithUpAsItsKey() {
+        GlanceConfig c = GlanceConfig.parse("{" + REQUIRED + "}");
+        assertFalse(c.fullscreen);
+        assertEquals("KEYCODE_DPAD_UP", c.fullscreenKey);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void fullscreenKeyMayNotRepeatAnotherCardKey() {
+        GlanceConfig.parse(requiredPlus("\"fullscreen\":true,\"fullscreenKey\":\"KEYCODE_DPAD_LEFT\""));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void fullscreenKeyMayNotBeOk() {
+        GlanceConfig.parse(requiredPlus("\"fullscreenKey\":\"KEYCODE_DPAD_CENTER\""));
+    }
 }

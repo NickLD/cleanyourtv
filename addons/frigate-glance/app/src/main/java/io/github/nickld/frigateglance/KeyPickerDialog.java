@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 final class KeyPickerDialog extends Dialog {
     private final TextView message;
 
-    KeyPickerDialog(Context context, String what, String otherKey, String otherName, Consumer<String> onPicked) {
+    KeyPickerDialog(Context context, String what, java.util.Map<String, String> others, Consumer<String> onPicked) {
         super(context);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         float dp = context.getResources().getDisplayMetrics().density;
@@ -55,7 +55,7 @@ final class KeyPickerDialog extends Dialog {
                 return true;
             }
             String name = KeyEvent.keyCodeToString(code);
-            String problem = KeyChoice.problem(name, otherKey, otherName);
+            String problem = KeyChoice.problem(name, others);
             if (problem != null) {
                 message.setText(problem);
                 message.setTextColor(0xFFFF7B72);

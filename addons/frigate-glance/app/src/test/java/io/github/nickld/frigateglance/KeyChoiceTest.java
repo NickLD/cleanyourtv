@@ -29,4 +29,11 @@ public class KeyChoiceTest {
     public void unknownKeysAreRefused() {
         assertTrue(KeyChoice.problem("KEYCODE_UNKNOWN", "x").contains("can't"));
     }
+
+    @Test
+    public void eachOtherCardKeyIsNamed() {
+        assertEquals("That button is already the Full screen key.",
+                KeyChoice.problem("KEYCODE_DPAD_UP", java.util.Map.of("Snooze", "KEYCODE_DPAD_RIGHT", "Full screen", "KEYCODE_DPAD_UP")));
+        assertNull(KeyChoice.problem("KEYCODE_MENU", java.util.Map.of("Snooze", "KEYCODE_DPAD_RIGHT")));
+    }
 }

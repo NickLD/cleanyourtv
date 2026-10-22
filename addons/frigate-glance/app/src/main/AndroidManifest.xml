@@ -35,6 +35,14 @@
             <meta-data android:name="com.gathin.tvhome.card" android:resource="@xml/module_card" />
         </activity>
 
+        <activity
+            android:name=".FullscreenActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="io.github.nickld.frigateglance.fullscreen"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+
         <service
             android:name=".GlanceService"
             android:exported="false"

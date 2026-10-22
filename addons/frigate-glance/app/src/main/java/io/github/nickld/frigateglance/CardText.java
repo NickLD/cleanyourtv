@@ -18,7 +18,13 @@ final class CardText {
     private CardText() {}
 
     static String footer(String dismissKey, String snoozeKey, int snoozeMinutes) {
-        return key(dismissKey) + " Dismiss · " + key(snoozeKey) + " Snooze " + duration(snoozeMinutes);
+        return footer(dismissKey, snoozeKey, snoozeMinutes, null);
+    }
+
+    /** fullscreenKey null while the full screen feature is off. */
+    static String footer(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey) {
+        String s = key(dismissKey) + " Dismiss · " + key(snoozeKey) + " Snooze " + duration(snoozeMinutes);
+        return fullscreenKey == null ? s : s + " · " + key(fullscreenKey) + " Full screen";
     }
 
     static String duration(int minutes) {

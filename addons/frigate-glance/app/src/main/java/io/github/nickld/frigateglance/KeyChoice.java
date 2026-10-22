@@ -8,6 +8,16 @@ final class KeyChoice {
         return problem(key, otherKey, "other card");
     }
 
+    /** others: name of each other card key ("Snooze", "Full screen") to its key. */
+    static String problem(String key, java.util.Map<String, String> others) {
+        String p = problem(key, "", "");
+        if (p != null) return p;
+        for (java.util.Map.Entry<String, String> e : others.entrySet()) {
+            if (key.equals(e.getValue())) return "That button is already the " + e.getKey() + " key.";
+        }
+        return null;
+    }
+
     /** Null when the key can be used; otherwise one sentence saying why not. */
     static String problem(String key, String otherKey, String otherName) {
         switch (key) {

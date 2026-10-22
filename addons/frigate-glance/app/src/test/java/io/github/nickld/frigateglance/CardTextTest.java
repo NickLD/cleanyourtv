@@ -33,4 +33,11 @@ public class CardTextTest {
         assertEquals("2h", CardText.duration(120));
         assertEquals("90 min", CardText.duration(90));
     }
+
+    @Test
+    public void footerNamesTheFullscreenKeyWhenOn() {
+        assertEquals("◀ Dismiss · ▶ Snooze 1h · ▲ Full screen",
+                CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP"));
+        assertEquals("◀ Dismiss · ▶ Snooze 1h", CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, null));
+    }
 }

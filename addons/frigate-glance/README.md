@@ -73,6 +73,7 @@ and `TestCardReceiver` shows a test card over whatever is playing.
 | `streams` | `{}` | camera to the go2rtc stream for live video, when Frigate's own live stream is too big |
 | `rtspUser`, `rtspPassword` | empty | go2rtc RTSP credentials, if set |
 | `boxes` | `true` | boxes around detected objects |
+| `fullscreen`, `fullscreenKey` | `false`, `KEYCODE_DPAD_UP` | a third card key that opens the camera full screen; Back returns |
 | `dismissKey`, `snoozeKey` | `KEYCODE_DPAD_LEFT`, `KEYCODE_DPAD_RIGHT` | Android key names; Back, OK and Enter are refused |
 
 ## Live video

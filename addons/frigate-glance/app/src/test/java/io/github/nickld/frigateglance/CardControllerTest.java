@@ -300,4 +300,13 @@ public class CardControllerTest {
         c.tick();
         assertFalse(c.isShowing());
     }
+
+    @Test
+    public void shownCameraIsKnownForFullScreen() {
+        assertEquals(null, c.shownCamera());
+        c.onReview(rev("new", "r1", "frontdoooor", "alert"));
+        assertEquals("frontdoooor", c.shownCamera());
+        c.dismiss();
+        assertEquals(null, c.shownCamera());
+    }
 }

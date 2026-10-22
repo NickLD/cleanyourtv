@@ -138,6 +138,49 @@ public class GlanceService extends Service {
         return until == 0 ? 0 : System.currentTimeMillis() + (until - SystemClock.elapsedRealtime());
     }
 
+    /** Width over height of a camera's frame; 16/9 when unknown. */
+    static float aspect(String camera) {
+        GlanceService s = instance;
+        int[] size = s == null ? null : s.detectSizes.get(camera);
+        return size == null ? 16f / 9f : (float) size[0] / size[1];
+    }
+
+    /** The camera's RTSP address, whatever the live video setting (the full screen view always tries it). */
+    static String liveUrl(String camera) {
+        GlanceService s = instance;
+        GlanceConfig cfg = s == null ? null : s.config;
+        if (cfg == null) return null;
+        String stream = cfg.streams.containsKey(camera) ? cfg.streams.get(camera) : s.streamFor(camera);
+        return LiveVideo.rtspUrl(cfg.frigateHost(), cfg.rtspUser, cfg.rtspPassword, stream);
+    }
+
+    /** A full-size snapshot for the full screen view. */
+    static byte[] snapshot(String camera) throws IOException {
+        GlanceService s = instance;
+        FrigateApi f = s == null ? null : s.frigate;
+        return f == null ? null : f.latestJpeg(camera, 1080);
+    }
+
+    /** The full screen key: the card closes and its camera opens full screen over whatever was playing. */
+    public static void openFullscreen() {
+        GlanceService s = instance;
+        if (s == null || s.cards == null) return;
+        s.cards.post(() -> {
+            if (s.controller == null || s.controller.shownCamera() == null) return;
+            String camera = s.controller.shownCamera();
+            String base = ReviewFilter.baseCamera(camera);
+            GlanceConfig c = s.config;
+            String title = c != null && c.cameras.containsKey(base) ? c.cameras.get(base) : CardController.pretty(base);
+            s.controller.dismiss();
+            Intent i = new Intent(s, FullscreenActivity.class)
+                    .putExtra(FullscreenActivity.EXTRA_CAMERA, camera)
+                    .putExtra(FullscreenActivity.EXTRA_TITLE, title)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
+            s.startActivity(i);
+            Log.i(TAG, "full screen: " + camera);
+        });
+    }
+
     public static boolean isCardShowing() {
         GlanceService s = instance;
         return s != null && s.card != null && s.card.reviewId() != null;
@@ -338,16 +381,13 @@ public class GlanceService extends Service {
 
                 @Override
                 public float aspect(String camera) {
-                    int[] s = detectSizes.get(camera);
-                    return s == null ? 16f / 9f : (float) s[0] / s[1];
+                    return GlanceService.aspect(camera);
                 }
 
                 @Override
                 public String liveUrl(String camera) {
                     GlanceConfig cfg = config;
-                    if (cfg == null || !cfg.liveVideo) return null;
-                    String stream = cfg.streams.containsKey(camera) ? cfg.streams.get(camera) : streamFor(camera);
-                    return LiveVideo.rtspUrl(cfg.frigateHost(), cfg.rtspUser, cfg.rtspPassword, stream);
+                    return cfg == null || !cfg.liveVideo ? null : GlanceService.liveUrl(camera);
                 }
             }, KeyService::setFiltering);
         } else {
