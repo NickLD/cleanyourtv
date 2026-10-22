@@ -55,6 +55,14 @@ final class KeyRules {
         return fullscreenHold && !longEnough ? SWALLOW : FULLSCREEN;
     }
 
+    /** The action of the key being held, while it is a key that needs a hold; 0 otherwise. */
+    int pendingHold() {
+        if (held == 0) return 0;
+        if (held == dismissCode) return dismissHold ? DISMISS : 0;
+        if (held == snoozeCode) return snoozeHold ? SNOOZE : 0;
+        return fullscreenHold ? FULLSCREEN : 0;
+    }
+
     /** True while a caught key is down, so filtering must stay on for its up. */
     boolean holding() {
         return held != 0;

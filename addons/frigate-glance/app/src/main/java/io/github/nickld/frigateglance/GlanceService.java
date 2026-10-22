@@ -182,6 +182,17 @@ public class GlanceService extends Service {
         });
     }
 
+    /** A hold key is down on a card: show its progress. action is KeyRules.DISMISS, SNOOZE or FULLSCREEN. */
+    static void holdStarted(int action) {
+        GlanceService s = instance;
+        if (s != null && s.card != null) s.card.showHold(action);
+    }
+
+    static void holdEnded() {
+        GlanceService s = instance;
+        if (s != null && s.card != null) s.card.endHold();
+    }
+
     public static boolean isCardShowing() {
         GlanceService s = instance;
         return s != null && s.card != null && s.card.reviewId() != null;

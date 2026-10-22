@@ -55,7 +55,11 @@ public class KeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        int pendingBefore = rules.pendingHold();
         int d = rules.decide(event.getKeyCode(), event.getAction(), event.getEventTime(), showing);
+        int pendingNow = rules.pendingHold();
+        if (pendingNow != 0 && pendingBefore == 0) GlanceService.holdStarted(pendingNow);
+        else if (pendingBefore != 0 && pendingNow == 0) GlanceService.holdEnded();
         if (d == KeyRules.DISMISS) GlanceService.dismissCard();
         else if (d == KeyRules.SNOOZE) GlanceService.snoozeCard();
         else if (d == KeyRules.FULLSCREEN) GlanceService.openFullscreen();

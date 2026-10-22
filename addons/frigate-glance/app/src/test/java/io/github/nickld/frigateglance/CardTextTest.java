@@ -46,4 +46,15 @@ public class CardTextTest {
         assertEquals("◀ Dismiss · Hold ▶ Snooze 1h · Hold ▲ Full screen",
                 CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, true));
     }
+
+    @Test
+    public void findsAnActionInTheFooter() {
+        String f = CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, false);
+        int[] r = CardText.segment(f, KeyRules.SNOOZE);
+        assertEquals("Hold ▶ Snooze 1h", f.substring(r[0], r[1]));
+        r = CardText.segment(f, KeyRules.FULLSCREEN);
+        assertEquals("▲ Full screen", f.substring(r[0], r[1]));
+        r = CardText.segment(f, KeyRules.DISMISS);
+        assertEquals("◀ Dismiss", f.substring(r[0], r[1]));
+    }
 }

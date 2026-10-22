@@ -92,4 +92,21 @@ public class KeyRulesTest {
         assertEquals(KeyRules.SWALLOW, r.decide(RIGHT, DOWN, 0, true));
         assertEquals(KeyRules.SNOOZE, r.decide(RIGHT, UPA, 50, true));
     }
+
+    @Test
+    public void heldHoldKeyIsReportedUntilReleased() {
+        KeyRules r = new KeyRules(LEFT, RIGHT, 0, false, true, false);
+        assertEquals(0, r.pendingHold());
+        r.decide(RIGHT, DOWN, 0, true);
+        assertEquals(KeyRules.SNOOZE, r.pendingHold());
+        r.decide(RIGHT, UPA, 100, true);
+        assertEquals(0, r.pendingHold());
+    }
+
+    @Test
+    public void quickKeyIsNeverAPendingHold() {
+        KeyRules r = new KeyRules(LEFT, RIGHT, 0, false, true, false);
+        r.decide(LEFT, DOWN, 0, true);
+        assertEquals(0, r.pendingHold());
+    }
 }

@@ -34,6 +34,21 @@ final class CardText {
         return fullscreenKey == null ? s : s + " · " + hold(fullscreenHold) + key(fullscreenKey) + " Full screen";
     }
 
+    /** Start and end of one action's part of the footer ("Hold ▶ Snooze 1h"), for highlighting it; null if absent. */
+    static int[] segment(String footer, int action) {
+        String word = action == KeyRules.DISMISS ? " Dismiss" : action == KeyRules.SNOOZE ? " Snooze " : " Full screen";
+        int start = 0;
+        while (start <= footer.length()) {
+            int end = footer.indexOf(" · ", start);
+            if (end < 0) end = footer.length();
+            if ((footer.substring(start, end) + " ").contains(word)) {
+                return new int[] {start, end};
+            }
+            start = end + 3;
+        }
+        return null;
+    }
+
     private static String hold(boolean on) {
         return on ? "Hold " : "";
     }

@@ -74,6 +74,10 @@ final class OverlayCard implements CardView {
     private ModeBadge badge;
     private boolean countingDown;
     private TextView info, footer;
+    /** The footer as last written, so a hold highlight can be laid over it and taken off again. */
+    private String footerText = "";
+    private int holdAction;
+    private final Runnable holdReached = () -> highlight(holdAction, true);
     private volatile String reviewId;
     private boolean snapshotLogged;
 
@@ -187,6 +191,36 @@ final class OverlayCard implements CardView {
         });
     }
 
+    /** A hold key went down: its action lights up, and turns green with "let go" once held long enough. */
+    void showHold(int action) {
+        main.post(() -> {
+            holdAction = action;
+            highlight(action, false);
+            main.removeCallbacks(holdReached);
+            main.postDelayed(holdReached, KeyRules.HOLD_MS);
+        });
+    }
+
+    /** The hold key came up: the footer goes back to normal. */
+    void endHold() {
+        main.post(() -> {
+            main.removeCallbacks(holdReached);
+            if (footer != null) footer.setText(footerText);
+        });
+    }
+
+    private void highlight(int action, boolean reached) {
+        if (footer == null || root == null) return;
+        int[] seg = CardText.segment(footerText, action);
+        if (seg == null) return;
+        String tail = reached ? "  ✓ let go" : "";
+        SpannableStringBuilder t = new SpannableStringBuilder(footerText.substring(0, seg[1]) + tail + footerText.substring(seg[1]));
+        int end = seg[1] + tail.length();
+        t.setSpan(new StyleSpan(Typeface.BOLD), seg[0], end, 0);
+        t.setSpan(new ForegroundColorSpan(reached ? 0xFF3DDC84 : 0xFFFFFFFF), seg[0], end, 0);
+        footer.setText(t);
+    }
+
     @Override
     public void hide() {
         reviewId = null;
@@ -253,8 +287,9 @@ final class OverlayCard implements CardView {
         t.setSpan(new ForegroundColorSpan(0xFFFFFFFF), 0, t.length(), 0);
         if (!m.detail.isEmpty()) t.append("  ").append(m.detail);
         info.setText(t);
-        footer.setText(CardText.footer(config.dismissKey, config.snoozeKey, config.snoozeMinutes,
-                config.fullscreen ? config.fullscreenKey : null, config.dismissHold, config.snoozeHold, config.fullscreenHold));
+        footerText = CardText.footer(config.dismissKey, config.snoozeKey, config.snoozeMinutes,
+                config.fullscreen ? config.fullscreenKey : null, config.dismissHold, config.snoozeHold, config.fullscreenHold);
+        footer.setText(footerText);
         boxes.setBoxes(config.boxes ? m.boxes : null);
         updateTimerBar(m.countdownMs);
     }
