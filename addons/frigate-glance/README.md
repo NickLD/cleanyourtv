@@ -10,9 +10,13 @@ when Frigate knows), the picture with a box around the object, and a thin bar al
 that is red while the event goes on and runs down once it has ended, as in Peek. The card leaves by itself
 a few seconds after the event ends.
 
-While a card is up, two remote buttons named on the card act on it: **Dismiss** (default ◀) closes it,
-**Snooze** (default ▶) closes it and keeps every card away for a while (default 1 hour). Every other button
-keeps controlling what you watch, and when no card is up the add-on reads no buttons at all.
+While a card is up, the remote buttons named on the card act on it: **Dismiss** (default ◀) closes it,
+**Snooze** (default ▶) closes it and keeps every card away for a while (default 1 hour), and the optional
+**Full screen** (default ▲) opens that camera on the whole screen until Back. Each can be set to act only
+when held, against an accidental press while moving around an app; a pill then draws itself around the
+action as it is held and turns green when letting go will act. Every other button keeps controlling what you
+watch, and when no card is up the add-on reads no buttons at all. A badge on the picture shows whether it is
+live video (a camera icon on red) or snapshots (stacked frames).
 
 By default only Frigate **alerts** open a card, so what counts as worth interrupting a film is set once, in
 Frigate's review settings (for example a person in a required zone), and the settings screen narrows it
@@ -25,7 +29,7 @@ further by camera and object.
 | Permission | Why |
 |---|---|
 | Display over other apps (`SYSTEM_ALERT_WINDOW`) | To draw the card over whatever is playing. The card never takes focus or touches. Granted by `install.sh` (TCL hides it in Settings). |
-| Accessibility service (`KeyService`) | To catch the Dismiss and Snooze buttons while a card is up. It switches key filtering on only while a card shows and off again after, and reads no other keys and no screen content. |
+| Accessibility service (`KeyService`) | To catch the card's buttons (Dismiss, Snooze, and Full screen when on) while a card is up. It switches key filtering on only while a card shows and off again after, and reads no other keys and no screen content. |
 | Internet (`INTERNET`) | To reach your MQTT broker and your Frigate server, and nothing else: no telemetry, no update checks, no ads. |
 | Foreground service (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`) | One background service keeps the MQTT connection open (a keep-alive every 30 s, no polling). |
 | Start at boot (`RECEIVE_BOOT_COMPLETED`) | To reconnect after a reboot. On TCL sets `install.sh` also allows the `APP_AUTO_START` app-op, without which TCL's firmware blocks it. |
@@ -48,9 +52,11 @@ and `TestCardReceiver` shows a test card over whatever is playing.
    It builds the add-on, installs it, grants the overlay and auto-start, pushes the config, turns on the key
    service next to any the launcher uses, and prints `MQTT: ok` and `Frigate: ok` (or what went wrong), then
    shows a test card. The pushed file is deleted on the TV once the add-on has read it.
-3. Press Home and answer **Show card** when the launcher asks about the add-on's card. Open it to change
-   cameras, objects, the corner, how long a card stays, the snooze length, live video, boxes and the two keys.
-   Settings changed there stay until the next config push.
+3. Press Home and answer **Show card** when the launcher asks about the add-on's card. Open it for the
+   settings, in five sections: **Overview** (snooze, connection status), **Cameras** (which cameras, and
+   whether cameras added later count), **Alerts** (alerts only or detections too, which objects), **Card**
+   (a test card for any camera, size, corner, how long it stays, live video, boxes) and **Remote** (each key
+   picked by pressing it, hold to act, full screen). Settings changed there stay until the next config push.
 
 ## Config keys
 
@@ -75,7 +81,7 @@ and `TestCardReceiver` shows a test card over whatever is playing.
 | `boxes` | `true` | boxes around detected objects |
 | `fullscreen`, `fullscreenKey` | `false`, `KEYCODE_DPAD_UP` | a third card key that opens the camera full screen; Back returns |
 | `dismissHold`, `snoozeHold`, `fullscreenHold` | `false` | that key acts only when held for 0.6 s; a quick press does nothing |
-| `dismissKey`, `snoozeKey` | `KEYCODE_DPAD_LEFT`, `KEYCODE_DPAD_RIGHT` | Android key names; Back, OK and Enter are refused |
+| `dismissKey`, `snoozeKey` | `KEYCODE_DPAD_LEFT`, `KEYCODE_DPAD_RIGHT` | Android key names; Back, OK, Enter and Home are refused |
 
 ## Live video
 
@@ -85,13 +91,17 @@ next to a playing YouTube video failed and made YouTube stall for a moment. Over
 live, the first frame after about 1.3 s. A camera's main stream can be large (the test cameras send
 2560x1920); publishing the camera's sub-stream in go2rtc and naming it in `streams` makes it lighter.
 
+A Frigate debug replay (camera `_replay_<name>`) counts as the camera it replays and shows as "Name
+(replay)". Frigate publishes no review items for a replay, so each tracked object stands in for an alert, and
+go2rtc has no stream for it, so a replay card always shows snapshots.
+
 ## Tested on
 
 TCL 65Q650G (Android TV 11, Realtek RTD2851, 2 GB) with the reference launcher 2.6, Frigate 0.18.2 and the
 Home Assistant Mosquitto broker. Checked with the real remote: Dismiss and Snooze over a playing YouTube
 video without it seeking, every other key passing through, the launcher's Netflix, YouTube, Prime, Settings
 and Input buttons unchanged, the card over Home, YouTube and the settings screen, reconnecting after a
-reboot without opening the app. Memory: about 25 MB idle, 40 to 53 MB with a card and live video up, about
+reboot without opening the app, hold to snooze, and a Frigate debug replay of a camera. Memory: about 25 MB idle, 40 to 53 MB with a card and live video up, about
 35 MB after a card.
 
 ## Credits
