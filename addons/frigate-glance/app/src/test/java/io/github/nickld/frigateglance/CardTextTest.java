@@ -47,14 +47,12 @@ public class CardTextTest {
                 CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, true));
     }
 
+
     @Test
-    public void findsAnActionInTheFooter() {
-        String f = CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, false);
-        int[] r = CardText.segment(f, KeyRules.SNOOZE);
-        assertEquals("Hold ▶ Snooze 1h", f.substring(r[0], r[1]));
-        r = CardText.segment(f, KeyRules.FULLSCREEN);
-        assertEquals("▲ Full screen", f.substring(r[0], r[1]));
-        r = CardText.segment(f, KeyRules.DISMISS);
-        assertEquals("◀ Dismiss", f.substring(r[0], r[1]));
+    public void footerPartsAreOnePerAction() {
+        java.util.Map<Integer, String> p = CardText.parts("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, false);
+        assertEquals(java.util.List.of(KeyRules.DISMISS, KeyRules.SNOOZE, KeyRules.FULLSCREEN), new java.util.ArrayList<>(p.keySet()));
+        assertEquals("Hold ▶ Snooze 1h", p.get(KeyRules.SNOOZE));
+        assertEquals(2, CardText.parts("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, null, false, false, false).size());
     }
 }

@@ -1,6 +1,7 @@
 package io.github.nickld.frigateglance;
 
 import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** The card's footer: which button does what, in words a remote's owner recognises. */
@@ -29,24 +30,18 @@ final class CardText {
     /** "Hold" before a key that acts only when held. */
     static String footer(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey,
             boolean dismissHold, boolean snoozeHold, boolean fullscreenHold) {
-        String s = hold(dismissHold) + key(dismissKey) + " Dismiss · " + hold(snoozeHold) + key(snoozeKey) + " Snooze "
-                + duration(snoozeMinutes);
-        return fullscreenKey == null ? s : s + " · " + hold(fullscreenHold) + key(fullscreenKey) + " Full screen";
+        return String.join(" · ", parts(dismissKey, snoozeKey, snoozeMinutes, fullscreenKey,
+                dismissHold, snoozeHold, fullscreenHold).values());
     }
 
-    /** Start and end of one action's part of the footer ("Hold ▶ Snooze 1h"), for highlighting it; null if absent. */
-    static int[] segment(String footer, int action) {
-        String word = action == KeyRules.DISMISS ? " Dismiss" : action == KeyRules.SNOOZE ? " Snooze " : " Full screen";
-        int start = 0;
-        while (start <= footer.length()) {
-            int end = footer.indexOf(" · ", start);
-            if (end < 0) end = footer.length();
-            if ((footer.substring(start, end) + " ").contains(word)) {
-                return new int[] {start, end};
-            }
-            start = end + 3;
-        }
-        return null;
+    /** The footer's actions in order (KeyRules.DISMISS, SNOOZE, FULLSCREEN) with their labels. */
+    static Map<Integer, String> parts(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey,
+            boolean dismissHold, boolean snoozeHold, boolean fullscreenHold) {
+        Map<Integer, String> m = new LinkedHashMap<>();
+        m.put(KeyRules.DISMISS, hold(dismissHold) + key(dismissKey) + " Dismiss");
+        m.put(KeyRules.SNOOZE, hold(snoozeHold) + key(snoozeKey) + " Snooze " + duration(snoozeMinutes));
+        if (fullscreenKey != null) m.put(KeyRules.FULLSCREEN, hold(fullscreenHold) + key(fullscreenKey) + " Full screen");
+        return m;
     }
 
     private static String hold(boolean on) {

@@ -73,11 +73,12 @@ final class OverlayCard implements CardView {
     private View timerBar;
     private ModeBadge badge;
     private boolean countingDown;
-    private TextView info, footer;
-    /** The footer as last written, so a hold highlight can be laid over it and taken off again. */
+    private TextView info;
+    /** One label per action ("◀ Dismiss", "Hold ▶ Snooze 1h"), so a hold can draw its pill around just one. */
+    private LinearLayout footer;
+    private final java.util.Map<Integer, TextView> actionLabels = new java.util.HashMap<>();
     private String footerText = "";
-    private int holdAction;
-    private final Runnable holdReached = () -> highlight(holdAction, true);
+    private android.animation.ValueAnimator holdAnim;
     private volatile String reviewId;
     private boolean snapshotLogged;
 
@@ -191,34 +192,30 @@ final class OverlayCard implements CardView {
         });
     }
 
-    /** A hold key went down: its action lights up, and turns green with "let go" once held long enough. */
+    /** A hold key went down: a pill outline draws itself around its action over HOLD_MS, green once closed. */
     void showHold(int action) {
         main.post(() -> {
-            holdAction = action;
-            highlight(action, false);
-            main.removeCallbacks(holdReached);
-            main.postDelayed(holdReached, KeyRules.HOLD_MS);
+            clearHold();
+            TextView label = actionLabels.get(action);
+            if (label == null || root == null) return;
+            PillProgress pill = new PillProgress(Math.max(1f, 1.5f * dp * scale()));
+            label.setBackground(pill);
+            holdAnim = android.animation.ValueAnimator.ofFloat(0f, 1f).setDuration(KeyRules.HOLD_MS);
+            holdAnim.setInterpolator(new LinearInterpolator());
+            holdAnim.addUpdateListener(a -> pill.setProgress((float) a.getAnimatedValue()));
+            holdAnim.start();
         });
     }
 
-    /** The hold key came up: the footer goes back to normal. */
+    /** The hold key came up: the pill goes. */
     void endHold() {
-        main.post(() -> {
-            main.removeCallbacks(holdReached);
-            if (footer != null) footer.setText(footerText);
-        });
+        main.post(this::clearHold);
     }
 
-    private void highlight(int action, boolean reached) {
-        if (footer == null || root == null) return;
-        int[] seg = CardText.segment(footerText, action);
-        if (seg == null) return;
-        String tail = reached ? "  ✓ let go" : "";
-        SpannableStringBuilder t = new SpannableStringBuilder(footerText.substring(0, seg[1]) + tail + footerText.substring(seg[1]));
-        int end = seg[1] + tail.length();
-        t.setSpan(new StyleSpan(Typeface.BOLD), seg[0], end, 0);
-        t.setSpan(new ForegroundColorSpan(reached ? 0xFF3DDC84 : 0xFFFFFFFF), seg[0], end, 0);
-        footer.setText(t);
+    private void clearHold() {
+        if (holdAnim != null) holdAnim.cancel();
+        holdAnim = null;
+        for (TextView t : actionLabels.values()) t.setBackground(null);
     }
 
     @Override
@@ -269,7 +266,11 @@ final class OverlayCard implements CardView {
         picture.addView(badge, bp);
         root.addView(picture, new LinearLayout.LayoutParams(px(WIDTH_DP), px(WIDTH_DP * 9 / 16)));
 
-        footer = text(10, 0xFF8B949E, Typeface.DEFAULT);
+        footer = new LinearLayout(context);
+        footer.setOrientation(LinearLayout.HORIZONTAL);
+        footer.setGravity(Gravity.CENTER_VERTICAL);
+        footerText = "";
+        actionLabels.clear();
         LinearLayout.LayoutParams fp = new LinearLayout.LayoutParams(-1, -2);
         fp.topMargin = px(4);
         root.addView(footer, fp);
@@ -287,9 +288,27 @@ final class OverlayCard implements CardView {
         t.setSpan(new ForegroundColorSpan(0xFFFFFFFF), 0, t.length(), 0);
         if (!m.detail.isEmpty()) t.append("  ").append(m.detail);
         info.setText(t);
-        footerText = CardText.footer(config.dismissKey, config.snoozeKey, config.snoozeMinutes,
+        java.util.Map<Integer, String> parts = CardText.parts(config.dismissKey, config.snoozeKey, config.snoozeMinutes,
                 config.fullscreen ? config.fullscreenKey : null, config.dismissHold, config.snoozeHold, config.fullscreenHold);
-        footer.setText(footerText);
+        String text = String.join(" · ", parts.values());
+        if (!text.equals(footerText)) {
+            footerText = text;
+            footer.removeAllViews();
+            actionLabels.clear();
+            int padH = px(5), padV = px(2);
+            for (java.util.Map.Entry<Integer, String> e : parts.entrySet()) {
+                if (footer.getChildCount() > 0) footer.addView(text(10, 0xFF8B949E, Typeface.DEFAULT));
+                TextView label = text(10, 0xFF8B949E, Typeface.DEFAULT);
+                label.setText(e.getValue());
+                label.setPadding(padH, padV, padH, padV);
+                footer.addView(label);
+                actionLabels.put(e.getKey(), label);
+            }
+            for (int k = 0; k < footer.getChildCount(); k++) {
+                TextView sep = (TextView) footer.getChildAt(k);
+                if (!actionLabels.containsValue(sep)) sep.setText("·");
+            }
+        }
         boxes.setBoxes(config.boxes ? m.boxes : null);
         updateTimerBar(m.countdownMs);
     }
