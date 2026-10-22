@@ -66,9 +66,16 @@ public class GlanceService extends Service {
         else s.restartNetwork();
     }
 
+    /** A test card asked for before the service was ready; shown once cards are set up. "" = first camera. */
+    private static volatile String pendingTest;
+
     public static void showTestCard(Context context, String camera) {
         GlanceService s = instance;
-        if (s == null || s.cards == null) return;
+        if (s == null || s.cards == null || s.controller == null) {
+            pendingTest = camera == null ? "" : camera;
+            if (s == null) start(context);
+            return;
+        }
         s.cards.post(() -> {
             if (s.controller == null) return;
             String cam = camera;
@@ -258,14 +265,18 @@ public class GlanceService extends Service {
                     String stream = cfg.streams.containsKey(camera) ? cfg.streams.get(camera) : streamFor(camera);
                     return LiveVideo.rtspUrl(cfg.frigateHost(), cfg.rtspUser, cfg.rtspPassword, stream);
                 }
-            }, showing -> { /* KeyService hooks in here (Task 9) */ });
+            }, KeyService::setFiltering);
         } else {
             card.setConfig(c);
             card.hide();
         }
         long snoozed = controller == null ? 0 : controller.snoozedUntil();
+        KeyService.reloadKeys(this);
         controller = new CardController(card, new ReviewFilter(c), c.cameras, c.dismissSeconds, SystemClock::elapsedRealtime);
         if (snoozed > 0) controller.snooze((int) Math.max(1, (snoozed - SystemClock.elapsedRealtime()) / 60_000));
+        String test = pendingTest;
+        pendingTest = null;
+        if (test != null) controller.showTest(test.isEmpty() ? firstCamera() : test);
     }
 
     private void route(String topic, String payload) {
