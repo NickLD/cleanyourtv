@@ -134,6 +134,7 @@ public class SettingsActivity extends Activity {
                 messagesRow = info("Last message from Frigate", "");
                 lastCardRow = info("Last card", "");
                 tvRow = info("On this TV", "");
+                divider();
                 snoozeRow = row("Snooze", "No cards from any camera for the snooze length (Remote section). OK again resumes.", "", () -> {
                     if (GlanceService.snoozedUntilWallClock() > 0) GlanceService.resume();
                     else GlanceService.snoozeCard();
@@ -158,6 +159,7 @@ public class SettingsActivity extends Activity {
                             }
                             store.saveSetting("newCameras", !on);
                         }));
+                divider();
                 if (cameras.isEmpty()) rows.addView(new SettingRow(this, "Cameras", "waiting for Frigate", null));
                 for (String cam : cameras) {
                     String name = c.cameras.containsKey(cam) ? c.cameras.get(cam) : CardController.pretty(cam);
@@ -180,6 +182,7 @@ public class SettingsActivity extends Activity {
                         + " are everything else it tracks, such as cars passing on the street.",
                         "alerts".equals(c.severity) ? "Alerts only" : "Alerts and detections", () -> save(cfg ->
                         store.saveSetting("severity", SettingsModel.next(SettingsModel.SEVERITIES, cfg.severity))));
+                divider();
                 List<String> labels = SettingsModel.labelNames(frigate);
                 if (labels.isEmpty()) rows.addView(new SettingRow(this, "Objects", "waiting for Frigate", null));
                 for (String label : labels) {
@@ -190,6 +193,7 @@ public class SettingsActivity extends Activity {
                 break;
             case "Card":
                 row("Show a test card", "Shows a card now, to check where it sits and that the remote buttons work.", "", () -> GlanceService.showTestCard(this, null));
+                divider();
                 row("Corner", "Which corner of the screen the card slides into.", CORNER_NAMES.get(c.corner),
                         () -> save(cfg -> store.saveSetting("corner", SettingsModel.next(SettingsModel.CORNERS, cfg.corner))));
                 row("Card stays", "How long the card stays once the event has ended, while the bar on top runs down.",
@@ -259,6 +263,15 @@ public class SettingsActivity extends Activity {
             again.requestFocus();
             rows.post(again::requestFocus);
         }
+    }
+
+    /** A thin line between a section's switch or action and the list of rows it governs. */
+    private void divider() {
+        View line = new View(this);
+        line.setBackgroundColor(0x22FFFFFF);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(1));
+        lp.setMargins(px(16), px(8), px(16), px(8));
+        rows.addView(line, lp);
     }
 
     /** A status line in Overview: not focusable, refreshed every two seconds by updateLive. */
