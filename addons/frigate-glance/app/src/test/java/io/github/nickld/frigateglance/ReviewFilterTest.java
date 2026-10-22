@@ -1,6 +1,7 @@
 package io.github.nickld.frigateglance;
 
 import static io.github.nickld.frigateglance.Fixtures.reviewJson;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -50,5 +51,17 @@ public class ReviewFilterTest {
     public void snoozedHidesEverythingUntilItExpires() {
         assertFalse(filter("{}").shows(review("alert", "driveway", "person"), NOW, NOW + 1));
         assertTrue(filter("{}").shows(review("alert", "driveway", "person"), NOW, NOW));
+    }
+
+    @Test
+    public void replayCameraCountsAsTheCameraItReplays() {
+        assertTrue(filter("{\"cameras\":{\"shop\":\"Shop\"}}").shows(review("alert", "_replay_shop", "person"), NOW, 0));
+        assertFalse(filter("{\"cameras\":{\"driveway\":\"Drive\"}}").shows(review("alert", "_replay_shop", "person"), NOW, 0));
+    }
+
+    @Test
+    public void baseCameraOfReplay() {
+        assertEquals("shop", ReviewFilter.baseCamera("_replay_shop"));
+        assertEquals("shop", ReviewFilter.baseCamera("shop"));
     }
 }

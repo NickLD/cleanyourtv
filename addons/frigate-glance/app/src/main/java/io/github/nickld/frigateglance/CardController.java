@@ -31,6 +31,14 @@ public final class CardController {
     /** True once the shown card is counting down to leaving (its review ended, or a test card). */
     private boolean ending;
     private long snoozedUntil;
+    /** Reviews that had a card which then left (dismissed, ended, replaced): their updates never reopen one. */
+    private final java.util.Set<String> closed = java.util.Collections.newSetFromMap(
+            new java.util.LinkedHashMap<String, Boolean>() {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Boolean> e) {
+                    return size() > 64;
+                }
+            });
 
     public CardController(CardView view, ReviewFilter filter, Map<String, String> displayNames, int dismissSeconds,
             LongSupplier clock) {
@@ -44,8 +52,12 @@ public final class CardController {
     public void onReview(Review r) {
         long now = clock.getAsLong();
         boolean isShown = shown != null && shown.id.equals(r.id);
-        if ("new".equals(r.type) || ("update".equals(r.type) && !isShown)) {
-            if (!"new".equals(r.type) || !filter.shows(r, now, snoozedUntil)) return;
+        // An update opens a card too when nothing is up and this review never had one: the add-on connected
+        // mid-event (a reconnect, a reinstall, a Frigate debug replay already running).
+        boolean late = "update".equals(r.type) && !isShown && shown == null && !closed.contains(r.id);
+        if ("new".equals(r.type) || late) {
+            if (!filter.shows(r, now, snoozedUntil)) return;
+            if (shown != null) closed.add(shown.id);
             shown = r;
             detections.clear();
             deadline = now + HARD_LIMIT_MS;
@@ -112,6 +124,7 @@ public final class CardController {
 
     private void hideNow() {
         if (shown == null) return;
+        closed.add(shown.id);
         shown = null;
         detections.clear();
         view.hide();
@@ -137,6 +150,8 @@ public final class CardController {
     }
 
     private String displayName(String camera) {
+        String base = ReviewFilter.baseCamera(camera);
+        if (!base.equals(camera)) return displayName(base) + " (replay)";
         String n = displayNames.get(camera);
         return n != null && !n.isEmpty() ? n : pretty(camera);
     }

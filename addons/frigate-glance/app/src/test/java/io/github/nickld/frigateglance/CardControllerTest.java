@@ -236,4 +236,43 @@ public class CardControllerTest {
         c.showTest("driveway");
         assertEquals(18_000, view.lastModel.countdownMs);
     }
+
+    @Test
+    public void replayCardSaysReplay() {
+        c.onReview(rev("new", "r1", "_replay_frontdoooor", "alert"));
+        assertEquals("Front door (replay)", view.lastModel.title);
+    }
+
+    @Test
+    public void updateForAnAlertNeverShownOpensACard() {
+        // Connected mid-event (a reconnect, a reinstall): only updates arrive for it.
+        c.onReview(rev("update", "r1", "frontdoooor", "alert"));
+        assertEquals("show:r1", view.last());
+    }
+
+    @Test
+    public void dismissedAlertDoesNotReopenOnUpdate() {
+        c.onReview(rev("new", "r1", "frontdoooor", "alert"));
+        c.dismiss();
+        c.onReview(rev("update", "r1", "frontdoooor", "alert"));
+        assertFalse(c.isShowing());
+    }
+
+    @Test
+    public void replacedAlertDoesNotStealTheCardBack() {
+        c.onReview(rev("new", "r1", "frontdoooor", "alert"));
+        c.onReview(rev("new", "r2", "driveway", "alert"));
+        c.onReview(rev("update", "r1", "frontdoooor", "alert"));
+        assertEquals("show:r2", view.last());
+    }
+
+    @Test
+    public void endedAlertDoesNotReopen() {
+        c.onReview(rev("new", "r1", "frontdoooor", "alert"));
+        c.onReview(rev("end", "r1", "frontdoooor", "alert"));
+        now += 9000;
+        c.tick();
+        c.onReview(rev("update", "r1", "frontdoooor", "alert"));
+        assertFalse(c.isShowing());
+    }
 }

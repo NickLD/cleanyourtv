@@ -52,6 +52,10 @@ public class GlanceService extends Service {
     private volatile List<String> cameraNames = Collections.emptyList();
     private volatile JSONObject frigateConfig;
     private CardController controller;
+    /** Re-reads Frigate's config off the network thread when an unknown camera appears (a replay, a new camera). */
+    private final java.util.concurrent.ExecutorService refetcher = java.util.concurrent.Executors.newSingleThreadExecutor();
+    private volatile long lastRefetch;
+    private static final long REFETCH_EVERY_MS = 60_000;
     private OverlayCard card;
     private boolean mqttUp, frigateUp;
 
@@ -176,6 +180,7 @@ public class GlanceService extends Service {
         if (m != null) m.stop();
         if (card != null) card.hide();
         cardThread.quitSafely();
+        refetcher.shutdownNow();
         instance = null;
         super.onDestroy();
     }
@@ -306,6 +311,7 @@ public class GlanceService extends Service {
         String p = c.topicPrefix;
         if (topic.equals(p + "/reviews")) {
             Review r = Review.parse(payload);
+            if (r != null) refetchIfUnknown(r.camera);
             if (r != null) cards.post(() -> { if (controller != null) controller.onReview(r); });
         } else if (topic.equals(p + "/events")) {
             Detection d = Detection.parse(payload, detectSizes);
@@ -314,6 +320,13 @@ public class GlanceService extends Service {
             boolean online = "online".equals(payload.trim());
             cards.post(() -> { if (controller != null) controller.onAvailable(online); });
         }
+    }
+
+    private void refetchIfUnknown(String camera) {
+        long now = SystemClock.elapsedRealtime();
+        if (detectSizes.containsKey(camera) || frigate == null || now - lastRefetch < REFETCH_EVERY_MS) return;
+        lastRefetch = now;
+        refetcher.execute(this::fetchFrigateConfig);
     }
 
     private void tick() {
