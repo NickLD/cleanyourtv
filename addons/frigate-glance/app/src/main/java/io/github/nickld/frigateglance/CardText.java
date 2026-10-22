@@ -22,30 +22,18 @@ final class CardText {
         return footer(dismissKey, snoozeKey, snoozeMinutes, null);
     }
 
-    /** fullscreenKey null while the full screen feature is off. */
+    /** fullscreenKey null while the full screen feature is off. Keys that need a hold get a pill on the card, no word. */
     static String footer(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey) {
-        return footer(dismissKey, snoozeKey, snoozeMinutes, fullscreenKey, false, false, false);
-    }
-
-    /** "Hold" before a key that acts only when held. */
-    static String footer(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey,
-            boolean dismissHold, boolean snoozeHold, boolean fullscreenHold) {
-        return String.join(" · ", parts(dismissKey, snoozeKey, snoozeMinutes, fullscreenKey,
-                dismissHold, snoozeHold, fullscreenHold).values());
+        return String.join(" · ", parts(dismissKey, snoozeKey, snoozeMinutes, fullscreenKey).values());
     }
 
     /** The footer's actions in order (KeyRules.DISMISS, SNOOZE, FULLSCREEN) with their labels. */
-    static Map<Integer, String> parts(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey,
-            boolean dismissHold, boolean snoozeHold, boolean fullscreenHold) {
+    static Map<Integer, String> parts(String dismissKey, String snoozeKey, int snoozeMinutes, String fullscreenKey) {
         Map<Integer, String> m = new LinkedHashMap<>();
-        m.put(KeyRules.DISMISS, hold(dismissHold) + key(dismissKey) + " Dismiss");
-        m.put(KeyRules.SNOOZE, hold(snoozeHold) + key(snoozeKey) + " Snooze " + duration(snoozeMinutes));
-        if (fullscreenKey != null) m.put(KeyRules.FULLSCREEN, hold(fullscreenHold) + key(fullscreenKey) + " Full screen");
+        m.put(KeyRules.DISMISS, key(dismissKey) + " Dismiss");
+        m.put(KeyRules.SNOOZE, key(snoozeKey) + " Snooze " + duration(snoozeMinutes));
+        if (fullscreenKey != null) m.put(KeyRules.FULLSCREEN, key(fullscreenKey) + " Full screen");
         return m;
-    }
-
-    private static String hold(boolean on) {
-        return on ? "Hold " : "";
     }
 
     static String duration(int minutes) {

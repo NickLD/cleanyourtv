@@ -42,17 +42,17 @@ public class CardTextTest {
     }
 
     @Test
-    public void footerSaysHoldForKeysThatNeedIt() {
-        assertEquals("◀ Dismiss · Hold ▶ Snooze 1h · Hold ▲ Full screen",
-                CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, true));
+    public void holdKeysNeedNoWordForItTheCardDrawsAPill() {
+        assertEquals("◀ Dismiss · ▶ Snooze 1h · ▲ Full screen",
+                CardText.footer("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP"));
     }
 
 
     @Test
     public void footerPartsAreOnePerAction() {
-        java.util.Map<Integer, String> p = CardText.parts("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP", false, true, false);
+        java.util.Map<Integer, String> p = CardText.parts("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, "KEYCODE_DPAD_UP");
         assertEquals(java.util.List.of(KeyRules.DISMISS, KeyRules.SNOOZE, KeyRules.FULLSCREEN), new java.util.ArrayList<>(p.keySet()));
-        assertEquals("Hold ▶ Snooze 1h", p.get(KeyRules.SNOOZE));
-        assertEquals(2, CardText.parts("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, null, false, false, false).size());
+        assertEquals("▶ Snooze 1h", p.get(KeyRules.SNOOZE));
+        assertEquals(2, CardText.parts("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT", 60, null).size());
     }
 }

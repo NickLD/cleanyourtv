@@ -289,7 +289,7 @@ final class OverlayCard implements CardView {
         if (!m.detail.isEmpty()) t.append("  ").append(m.detail);
         info.setText(t);
         java.util.Map<Integer, String> parts = CardText.parts(config.dismissKey, config.snoozeKey, config.snoozeMinutes,
-                config.fullscreen ? config.fullscreenKey : null, config.dismissHold, config.snoozeHold, config.fullscreenHold);
+                config.fullscreen ? config.fullscreenKey : null);
         String text = String.join(" · ", parts.values());
         if (!text.equals(footerText)) {
             footerText = text;
