@@ -86,13 +86,21 @@ public class GlanceService extends Service {
 
     public static void dismissCard() {
         GlanceService s = instance;
-        if (s != null && s.cards != null) s.cards.post(() -> { if (s.controller != null) s.controller.dismiss(); });
+        if (s != null && s.cards != null) s.cards.post(() -> {
+            if (s.controller == null) return;
+            s.controller.dismiss();
+            Log.i(TAG, "card dismissed");
+        });
     }
 
     public static void snoozeCard() {
         GlanceService s = instance;
         if (s != null && s.cards != null) {
-            s.cards.post(() -> { if (s.controller != null && s.config != null) s.controller.snooze(s.config.snoozeMinutes); });
+            s.cards.post(() -> {
+                if (s.controller == null || s.config == null) return;
+                s.controller.snooze(s.config.snoozeMinutes);
+                Log.i(TAG, "snoozed for " + s.config.snoozeMinutes + " min");
+            });
         }
     }
 

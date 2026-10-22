@@ -28,6 +28,8 @@ public final class CardController {
     private Review shown;
     private final Map<String, Detection> detections = new LinkedHashMap<>();
     private long deadline;
+    /** True once the shown card is counting down to leaving (its review ended, or a test card). */
+    private boolean ending;
     private long snoozedUntil;
 
     public CardController(CardView view, ReviewFilter filter, Map<String, String> displayNames, int dismissSeconds,
@@ -47,14 +49,17 @@ public final class CardController {
             shown = r;
             detections.clear();
             deadline = now + HARD_LIMIT_MS;
+            ending = false;
             view.show(model());
         } else if (isShown && "update".equals(r.type)) {
             shown = r;
             deadline = now + HARD_LIMIT_MS;
+            ending = false;
             view.update(model());
         } else if (isShown && "end".equals(r.type)) {
             shown = r;
             deadline = now + dismissSeconds * 1000L;
+            ending = true;
             view.update(model());
         }
     }
@@ -75,6 +80,7 @@ public final class CardController {
         shown = Review.parse("{\"type\":\"new\",\"after\":" + after + "}");
         detections.clear();
         deadline = clock.getAsLong() + dismissSeconds * 1000L + TEST_EXTRA_MS;
+        ending = true;
         view.show(model());
     }
 
@@ -114,7 +120,8 @@ public final class CardController {
     private CardModel model() {
         List<float[]> boxes = new ArrayList<>();
         for (Detection d : detections.values()) if (d.box != null) boxes.add(d.box);
-        return new CardModel(shown.id, shown.camera, displayName(shown.camera), detail(), boxes);
+        long countdown = ending ? Math.max(0, deadline - clock.getAsLong()) : 0;
+        return new CardModel(shown.id, shown.camera, displayName(shown.camera), detail(), boxes, countdown);
     }
 
     private String detail() {

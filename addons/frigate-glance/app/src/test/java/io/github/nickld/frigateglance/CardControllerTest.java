@@ -206,4 +206,34 @@ public class CardControllerTest {
         c.tick();
         assertFalse(c.isShowing());
     }
+
+    @Test
+    public void activeCardHasNoCountdown() {
+        c.onReview(rev("new", "r1", "frontdoooor", "alert"));
+        assertEquals(0, view.lastModel.countdownMs);
+        c.onReview(rev("update", "r1", "frontdoooor", "alert"));
+        assertEquals(0, view.lastModel.countdownMs);
+    }
+
+    @Test
+    public void endStartsCountdownOfDismissSeconds() {
+        c.onReview(rev("new", "r1", "frontdoooor", "alert"));
+        c.onReview(rev("end", "r1", "frontdoooor", "alert"));
+        assertEquals(8000, view.lastModel.countdownMs);
+    }
+
+    @Test
+    public void detectionAfterEndKeepsTheCountdownRunning() {
+        c.onReview(revWithDetection("r1", "ev1"));
+        c.onReview(Review.parse("{\"type\":\"end\",\"after\":{\"id\":\"r1\",\"camera\":\"frontdoooor\",\"severity\":\"alert\",\"data\":{\"detections\":[\"ev1\"],\"objects\":[\"person\"]}}}"));
+        now += 3000;
+        c.onDetection(det("ev1", BOX));
+        assertEquals(5000, view.lastModel.countdownMs);
+    }
+
+    @Test
+    public void testCardCountsDownItsWholeLife() {
+        c.showTest("driveway");
+        assertEquals(18_000, view.lastModel.countdownMs);
+    }
 }

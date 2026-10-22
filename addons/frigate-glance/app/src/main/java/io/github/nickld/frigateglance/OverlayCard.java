@@ -5,13 +5,18 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.Typeface;
+import android.media.AudioManager;
 import android.os.Handler;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -42,9 +47,9 @@ final class OverlayCard implements CardView {
         void onShowing(boolean showing);
     }
 
-    static final int WIDTH_DP = 480;
-    static final int MAX_HEIGHT_DP = 270;
-    private static final int MARGIN_DP = 48;
+    static final int WIDTH_DP = 320;
+    static final int MAX_HEIGHT_DP = 180;
+    private static final int MARGIN_DP = 24;
     static final long SNAPSHOT_REFRESH_MS = 1000;
 
     private final Context context;
@@ -63,7 +68,10 @@ final class OverlayCard implements CardView {
     private LiveVideo live;
     private boolean refreshing;
     private BoxView boxes;
-    private TextView title, detail, footer;
+    /** Peek's timer bar: red and full while the event goes on, white and shrinking once it has ended. */
+    private View timerBar;
+    private boolean countingDown;
+    private TextView info, footer;
     private volatile String reviewId;
     private boolean snapshotLogged;
 
@@ -108,6 +116,13 @@ final class OverlayCard implements CardView {
         if (root == null || !id.equals(reviewId)) return;
         stopPicture();
         String url = source.liveUrl(camera);
+        // Something already playing holds the TV's video decoder; a second stream fails there and makes the
+        // playing app stall for a moment (TCL 65Q650G with YouTube). Snapshots then, live video over menus.
+        AudioManager audio = context.getSystemService(AudioManager.class);
+        if (url != null && audio != null && audio.isMusicActive()) {
+            Log.i(ConfigStore.TAG, "media playing; snapshots instead of live video");
+            url = null;
+        }
         if (url == null) {
             refresh(id, camera);
             return;
@@ -174,8 +189,14 @@ final class OverlayCard implements CardView {
         root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundResource(R.drawable.card_glass);
-        int pad = px(12);
+        int pad = px(8);
         root.setPadding(pad, pad, pad, pad);
+
+        // Camera and what was seen above the picture, the two buttons in a small line under it.
+        info = text(13, 0xFFC9D1D9, Typeface.DEFAULT);
+        LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(-1, -2);
+        ip.bottomMargin = px(5);
+        root.addView(info, ip);
 
         picture = new FrameLayout(context);
         picture.setBackgroundResource(R.drawable.picture_frame);
@@ -188,36 +209,57 @@ final class OverlayCard implements CardView {
         picture.addView(image, new FrameLayout.LayoutParams(-1, -1));
         picture.addView(video, new FrameLayout.LayoutParams(-1, -1));
         picture.addView(boxes, new FrameLayout.LayoutParams(-1, -1));
+        timerBar = new View(context);
+        timerBar.setPivotX(0f);
+        picture.addView(timerBar, new FrameLayout.LayoutParams(-1, px(3), Gravity.TOP));
         root.addView(picture, new LinearLayout.LayoutParams(px(WIDTH_DP), px(WIDTH_DP * 9 / 16)));
 
-        title = text(22, 0xFFFFFFFF, Typeface.DEFAULT_BOLD);
-        detail = text(17, 0xFFC9D1D9, Typeface.DEFAULT);
-        footer = text(14, 0xFF8B949E, Typeface.DEFAULT);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.topMargin = px(10);
-        root.addView(title, lp);
-        root.addView(detail, new LinearLayout.LayoutParams(-1, -2));
+        footer = text(10, 0xFF8B949E, Typeface.DEFAULT);
         LinearLayout.LayoutParams fp = new LinearLayout.LayoutParams(-1, -2);
-        fp.topMargin = px(6);
+        fp.topMargin = px(4);
         root.addView(footer, fp);
     }
 
     private void fill(CardModel m, boolean newCard) {
         if (newCard) {
-            // At most 480 dp wide and 270 dp tall (a 16:9 frame fills both), in the camera's own shape so boxes line up.
-            float aspect = source.aspect(m.camera);
-            int h = Math.min(px(MAX_HEIGHT_DP), Math.round(px(WIDTH_DP) / aspect));
-            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) picture.getLayoutParams();
-            lp.height = h;
-            lp.width = Math.round(h * aspect);
-            picture.setLayoutParams(lp);
+            // At most 320 dp wide and 180 dp tall (a 16:9 frame fills both), in the camera's own shape so boxes line up.
+            sizePicture(source.aspect(m.camera));
             image.setImageDrawable(null);
+            countingDown = false;
         }
-        title.setText(m.title);
-        detail.setText(m.detail);
-        detail.setVisibility(m.detail.isEmpty() ? View.GONE : View.VISIBLE);
+        SpannableStringBuilder t = new SpannableStringBuilder(m.title);
+        t.setSpan(new StyleSpan(Typeface.BOLD), 0, t.length(), 0);
+        t.setSpan(new ForegroundColorSpan(0xFFFFFFFF), 0, t.length(), 0);
+        if (!m.detail.isEmpty()) t.append("  ").append(m.detail);
+        info.setText(t);
         footer.setText(CardText.footer(config.dismissKey, config.snoozeKey, config.snoozeMinutes));
         boxes.setBoxes(config.boxes ? m.boxes : null);
+        updateTimerBar(m.countdownMs);
+    }
+
+    private void updateTimerBar(long countdownMs) {
+        if (countdownMs <= 0) {
+            countingDown = false;
+            timerBar.animate().cancel();
+            timerBar.setScaleX(1f);
+            timerBar.setBackgroundColor(0xD9DC3C3C);
+            return;
+        }
+        if (countingDown) return;
+        countingDown = true;
+        timerBar.setBackgroundColor(0xBFFFFFFF);
+        timerBar.setScaleX(1f);
+        timerBar.animate().scaleX(0f).setDuration(countdownMs).setInterpolator(new LinearInterpolator()).start();
+    }
+
+    private void sizePicture(float aspect) {
+        int h = Math.min(px(MAX_HEIGHT_DP), Math.round(px(WIDTH_DP) / aspect));
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) picture.getLayoutParams();
+        int w = Math.round(h * aspect);
+        if (lp.height == h && lp.width == w) return;
+        lp.height = h;
+        lp.width = w;
+        picture.setLayoutParams(lp);
     }
 
     void loadSnapshot(String id, String camera) {
@@ -226,7 +268,10 @@ final class OverlayCard implements CardView {
                 byte[] jpeg = source.snapshot(camera);
                 Bitmap bmp = decode(jpeg);
                 main.post(() -> {
-                    if (root != null && id.equals(reviewId) && bmp != null) image.setImageBitmap(bmp);
+                    if (root == null || !id.equals(reviewId) || bmp == null) return;
+                    // The frame's own shape, in case Frigate's camera sizes were not known when the card opened.
+                    sizePicture((float) bmp.getWidth() / bmp.getHeight());
+                    image.setImageBitmap(bmp);
                 });
             } catch (IOException | RuntimeException e) {
                 if (!snapshotLogged) Log.w(ConfigStore.TAG, "frigate error: snapshot " + camera + ": " + e.getMessage());
