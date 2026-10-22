@@ -195,7 +195,8 @@ public class SettingsActivity extends Activity {
                 }
                 break;
             case "Card":
-                row("Show a test card", "Shows a card now, to check where it sits and that the remote buttons work.", "", () -> GlanceService.showTestCard(this, null));
+                row("Show a test card", "Pick a camera and its card shows now, to check where it sits and that the remote buttons work.",
+                        "", () -> pickTestCamera(c));
                 divider();
                 row("Card size", "How big the card is, picture and text together.", c.cardScale + "%", () -> save(cfg ->
                         store.saveSetting("cardScale", SettingsModel.next(SettingsModel.CARD_SCALES, cfg.cardScale))));
@@ -269,6 +270,18 @@ public class SettingsActivity extends Activity {
                 return;
             }
         }
+    }
+
+    /** The camera list for a test card; falls back to the first camera while Frigate's list is not in yet. */
+    private void pickTestCamera(GlanceConfig c) {
+        List<String> cameras = SettingsModel.cameraNames(GlanceService.frigateConfig());
+        if (cameras.isEmpty()) {
+            GlanceService.showTestCard(this, null);
+            return;
+        }
+        Map<String, String> names = new java.util.LinkedHashMap<>();
+        for (String cam : cameras) names.put(cam, c.cameras.containsKey(cam) ? c.cameras.get(cam) : CardController.pretty(cam));
+        new CameraPickerDialog(this, names, cam -> GlanceService.showTestCard(this, cam)).show();
     }
 
     /** Opens the "press the button" window; the button pressed is saved like any other setting. */
