@@ -320,6 +320,11 @@ public class GlanceService extends Service {
             if (r != null) refetchIfUnknown(r.camera);
             if (r != null) cards.post(() -> { if (controller != null) controller.onReview(r); });
         } else if (topic.equals(p + "/events")) {
+            Review replay = Review.fromReplayEvent(payload);
+            if (replay != null) {
+                refetchIfUnknown(replay.camera);
+                cards.post(() -> { if (controller != null) controller.onReview(replay); });
+            }
             Detection d = Detection.parse(payload, detectSizes);
             if (d != null) cards.post(() -> { if (controller != null) controller.onDetection(d); });
         } else if (topic.equals(p + "/available")) {

@@ -17,8 +17,11 @@ public final class Detection {
     /** x1, y1, x2, y2 as fractions of the frame, or null when the camera's detect size is unknown. */
     public final float[] box;
     public final List<String> zones;
+    /** Frigate stopped tracking it ("end"): it has left the picture, so its box goes. */
+    public final boolean ended;
 
-    private Detection(JSONObject a, Map<String, int[]> detectSize) {
+    private Detection(JSONObject a, Map<String, int[]> detectSize, boolean ended) {
+        this.ended = ended;
         id = a.optString("id", "");
         camera = a.optString("camera", "");
         label = a.optString("label", "");
@@ -33,9 +36,10 @@ public final class Detection {
     /** The parsed message, or null when it is not an event message. */
     public static Detection parse(String payload, Map<String, int[]> detectSize) {
         try {
-            JSONObject after = new JSONObject(payload).optJSONObject("after");
+            JSONObject o = new JSONObject(payload);
+            JSONObject after = o.optJSONObject("after");
             if (after == null) return null;
-            Detection d = new Detection(after, detectSize);
+            Detection d = new Detection(after, detectSize, "end".equals(o.optString("type", "")));
             return d.id.isEmpty() || d.camera.isEmpty() ? null : d;
         } catch (JSONException e) {
             return null;

@@ -70,4 +70,21 @@ public class ReviewTest {
         assertNull(Detection.parse("{}", Map.of()));
         assertNull(Detection.parse("[]", Map.of()));
     }
+
+    @Test
+    public void replayEventStandsInForAReview() {
+        Review r = Review.fromReplayEvent(fixture("event_replay_new.json"));
+        assertEquals("new", r.type);
+        assertEquals("_replay_shop", r.camera);
+        assertEquals("alert", r.severity);
+        assertEquals(List.of("person"), r.objects);
+        assertEquals(List.of("1761110000.5-xyz"), r.detectionIds);
+        assertEquals("replay-1761110000.5-xyz", r.id);
+    }
+
+    @Test
+    public void onlyReplayCameraEventsStandIn() {
+        assertNull(Review.fromReplayEvent(fixture("event_update.json")));
+        assertNull(Review.fromReplayEvent("not json"));
+    }
 }

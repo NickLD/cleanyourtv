@@ -78,7 +78,8 @@ public final class CardController {
 
     public void onDetection(Detection d) {
         if (shown == null || !shown.detectionIds.contains(d.id)) return;
-        detections.put(d.id, d);
+        if (d.ended) detections.remove(d.id);
+        else detections.put(d.id, d);
         view.update(model());
     }
 

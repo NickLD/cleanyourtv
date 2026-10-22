@@ -275,4 +275,14 @@ public class CardControllerTest {
         c.onReview(rev("update", "r1", "frontdoooor", "alert"));
         assertFalse(c.isShowing());
     }
+
+    @Test
+    public void endedObjectLosesItsBox() {
+        c.onReview(revWithDetection("r1", "ev1"));
+        c.onDetection(det("ev1", BOX));
+        assertEquals(1, view.lastModel.boxes.size());
+        c.onDetection(Detection.parse("{\"type\":\"end\",\"after\":{\"id\":\"ev1\",\"camera\":\"frontdoooor\",\"label\":\"person\",\"box\":[0,0,50,50]}}",
+                Map.of("frontdoooor", new int[] {100, 100})));
+        assertEquals(0, view.lastModel.boxes.size());
+    }
 }
