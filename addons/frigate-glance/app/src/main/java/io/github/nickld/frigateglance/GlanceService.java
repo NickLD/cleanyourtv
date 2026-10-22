@@ -66,6 +66,19 @@ public class GlanceService extends Service {
         else s.restartNetwork();
     }
 
+    /** Applies a change from the settings screen without reconnecting: filters, card look, keys. */
+    public static void settingsChanged(Context context) {
+        GlanceService s = instance;
+        if (s == null) {
+            start(context);
+            return;
+        }
+        GlanceConfig c = new ConfigStore(s).load();
+        if (c == null) return;
+        s.config = c;
+        s.cards.post(() -> s.setUpCards(c));
+    }
+
     /** A test card asked for before the service was ready; shown once cards are set up. "" = first camera. */
     private static volatile String pendingTest;
 
