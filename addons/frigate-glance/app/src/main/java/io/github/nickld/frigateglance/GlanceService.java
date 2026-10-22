@@ -250,6 +250,14 @@ public class GlanceService extends Service {
                     int[] s = detectSizes.get(camera);
                     return s == null ? 16f / 9f : (float) s[0] / s[1];
                 }
+
+                @Override
+                public String liveUrl(String camera) {
+                    GlanceConfig cfg = config;
+                    if (cfg == null || !cfg.liveVideo) return null;
+                    String stream = cfg.streams.containsKey(camera) ? cfg.streams.get(camera) : streamFor(camera);
+                    return LiveVideo.rtspUrl(cfg.frigateHost(), cfg.rtspUser, cfg.rtspPassword, stream);
+                }
             }, showing -> { /* KeyService hooks in here (Task 9) */ });
         } else {
             card.setConfig(c);

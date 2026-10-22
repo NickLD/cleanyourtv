@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
@@ -31,6 +32,9 @@ final class OverlayCard implements CardView {
 
         /** Width over height of the camera's frame, so boxes line up; 16/9 when unknown. */
         float aspect(String camera);
+
+        /** RTSP address for live video, or null when live video is off. */
+        String liveUrl(String camera);
     }
 
     /** Told when a card appears and leaves, so the key service filters keys only meanwhile. */
@@ -41,6 +45,7 @@ final class OverlayCard implements CardView {
     static final int WIDTH_DP = 480;
     static final int MAX_HEIGHT_DP = 270;
     private static final int MARGIN_DP = 48;
+    static final long SNAPSHOT_REFRESH_MS = 1000;
 
     private final Context context;
     private final WindowManager wm;
@@ -54,6 +59,9 @@ final class OverlayCard implements CardView {
     private LinearLayout root;
     private FrameLayout picture;
     private ImageView image;
+    private TextureView video;
+    private LiveVideo live;
+    private boolean refreshing;
     private BoxView boxes;
     private TextView title, detail, footer;
     private volatile String reviewId;
@@ -92,6 +100,52 @@ final class OverlayCard implements CardView {
             }
         });
         loadSnapshot(m.reviewId, m.camera);
+        main.post(() -> startPicture(m.reviewId, m.camera));
+    }
+
+    /** Live video when it is on and starts; otherwise a snapshot refreshed every second. */
+    private void startPicture(String id, String camera) {
+        if (root == null || !id.equals(reviewId)) return;
+        stopPicture();
+        String url = source.liveUrl(camera);
+        if (url == null) {
+            refresh(id, camera);
+            return;
+        }
+        live = new LiveVideo(context, new LiveVideo.Listener() {
+            @Override
+            public void onPlaying() {
+                if (video != null) video.animate().alpha(1f).setDuration(300).start();
+            }
+
+            @Override
+            public void onGaveUp() {
+                if (video != null) video.setAlpha(0f);
+                refresh(id, camera);
+            }
+        });
+        live.start(url, video);
+    }
+
+    private void refresh(String id, String camera) {
+        refreshing = true;
+        main.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!refreshing || root == null || !id.equals(reviewId)) return;
+                loadSnapshot(id, camera);
+                main.postDelayed(this, SNAPSHOT_REFRESH_MS);
+            }
+        }, SNAPSHOT_REFRESH_MS);
+    }
+
+    private void stopPicture() {
+        refreshing = false;
+        if (live != null) {
+            live.release();
+            live = null;
+        }
+        if (video != null) video.setAlpha(0f);
     }
 
     @Override
@@ -107,7 +161,9 @@ final class OverlayCard implements CardView {
         main.post(() -> {
             if (root == null) return;
             View gone = root;
+            stopPicture();
             root = null;
+            video = null;
             showingListener.onShowing(false);
             gone.animate().translationX(slideDistance()).alpha(0f).setDuration(200)
                     .withEndAction(() -> removeQuietly(gone)).start();
@@ -126,8 +182,11 @@ final class OverlayCard implements CardView {
         picture.setClipToOutline(true);
         image = new ImageView(context);
         image.setScaleType(ImageView.ScaleType.FIT_XY);
+        video = new TextureView(context);
+        video.setAlpha(0f);
         boxes = new BoxView(context);
         picture.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        picture.addView(video, new FrameLayout.LayoutParams(-1, -1));
         picture.addView(boxes, new FrameLayout.LayoutParams(-1, -1));
         root.addView(picture, new LinearLayout.LayoutParams(px(WIDTH_DP), px(WIDTH_DP * 9 / 16)));
 

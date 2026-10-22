@@ -124,4 +124,22 @@ public class GlanceConfigTest {
     public void overridesAreValidatedToo() throws Exception {
         GlanceConfig.parse(FULL).withOverrides(new JSONObject("{\"dismissKey\":\"KEYCODE_BACK\"}"));
     }
+
+    @Test
+    public void streamsMapCamerasToGo2rtcStreams() {
+        GlanceConfig c = GlanceConfig.parse(requiredPlus("\"streams\":{\"frontdoooor\":\"frontdoooor_sub\"}"));
+        assertEquals("frontdoooor_sub", c.streams.get("frontdoooor"));
+        assertTrue(GlanceConfig.parse("{" + REQUIRED + "}").streams.isEmpty());
+    }
+
+    @Test
+    public void streamsSurviveRoundTrip() {
+        GlanceConfig c = GlanceConfig.parse(requiredPlus("\"streams\":{\"shop\":\"shop_sub\"}"));
+        assertEquals("shop_sub", GlanceConfig.parse(c.toJson()).streams.get("shop"));
+    }
+
+    @Test
+    public void frigateHostFromUrl() {
+        assertEquals("192.168.4.58", GlanceConfig.parse("{" + REQUIRED + "}").frigateHost());
+    }
 }
