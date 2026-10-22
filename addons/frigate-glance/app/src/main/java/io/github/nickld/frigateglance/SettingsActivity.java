@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -25,6 +27,7 @@ import org.json.JSONObject;
  */
 public class SettingsActivity extends Activity {
     private static final long REFRESH_MS = 2000;
+    private static final int SNOOZED = 0xFFFFB454, CARDS_ON = 0xFF3DDC84;
     private static final String[] SECTIONS = {"Overview", "Cameras", "Alerts", "Card", "Remote"};
     private static final Map<String, String> CORNER_NAMES = Map.of(
             "top-right", "Top right", "top-left", "Top left", "bottom-left", "Bottom left", "bottom-right", "Bottom right");
@@ -129,17 +132,17 @@ public class SettingsActivity extends Activity {
         waitingForFrigate = frigate == null;
         switch (SECTIONS[section]) {
             case "Overview":
-                mqttRow = info("MQTT broker", "");
-                frigateRow = info("Frigate", "");
-                messagesRow = info("Last message from Frigate", "");
-                lastCardRow = info("Last card", "");
-                tvRow = info("On this TV", "");
-                divider();
                 snoozeRow = row("Snooze", "No cards from any camera for the snooze length (Remote section). OK again resumes.", "", () -> {
                     if (GlanceService.snoozedUntilWallClock() > 0) GlanceService.resume();
                     else GlanceService.snoozeCard();
                     main.postDelayed(this::updateLive, 200);
                 });
+                divider();
+                mqttRow = info("MQTT broker", "");
+                frigateRow = info("Frigate", "");
+                messagesRow = info("Last message from Frigate", "");
+                lastCardRow = info("Last card", "");
+                tvRow = info("On this TV", "");
                 break;
             case "Cameras":
                 List<String> cameras = SettingsModel.cameraNames(frigate);
@@ -339,11 +342,26 @@ public class SettingsActivity extends Activity {
                     + " · remote buttons " + (KeyService.isRunning() ? "on" : "off (run install.sh)"));
             tvRow.setValue(overlay && KeyService.isRunning() ? "Ready" : "Needs install.sh");
         }
+        long until = GlanceService.snoozedUntilWallClock();
+        String snoozedText = until > 0 ? "Snoozed until " + DateFormat.getTimeFormat(this).format(new Date(until)) : null;
+        if (snoozedText != null) {
+            // Seen from every section: the status line under the title says it too.
+            SpannableStringBuilder line = new SpannableStringBuilder(GlanceService.statusLine() + " · ");
+            int from = line.length();
+            line.append(snoozedText);
+            line.setSpan(new ForegroundColorSpan(SNOOZED), from, line.length(), 0);
+            status.setText(line);
+        }
         if (snoozeRow != null) {
-            long until = GlanceService.snoozedUntilWallClock();
-            snoozeRow.setValue(until > 0
-                    ? "Snoozed until " + DateFormat.getTimeFormat(this).format(new Date(until)) + " · OK resumes"
-                    : "Snooze now");
+            GlanceConfig c = store.load();
+            int minutes = c == null ? 60 : c.snoozeMinutes;
+            if (snoozedText != null) {
+                snoozeRow.setValue(snoozedText, SNOOZED);
+                snoozeRow.setDetail("Cards are paused. OK resumes them.");
+            } else {
+                snoozeRow.setValue("Cards on", CARDS_ON);
+                snoozeRow.setDetail("OK snoozes cards from every camera for " + CardText.duration(minutes) + ".");
+            }
         }
         // The camera and object lists appear once Frigate's config has been read.
         if (waitingForFrigate && GlanceService.frigateConfig() != null) {
