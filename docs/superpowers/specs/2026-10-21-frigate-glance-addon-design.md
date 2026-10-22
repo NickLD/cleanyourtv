@@ -1,4 +1,4 @@
-# Peek TV: a Frigate camera pop-up add-on for the launcher
+# Frigate Glance: a Frigate camera pop-up add-on for the launcher
 
 Date: 2026-10-21. Status: design, not yet approved.
 
@@ -13,7 +13,7 @@ the camera notifications Apple TV shows. This brings the same thing to an Androi
 anything (YouTube TV, Netflix, an HDMI input), a small card slides into a corner with the camera that
 saw something, what it saw, and the picture, then goes away on its own.
 
-It ships as an add-on in `addons/peek-tv/` of this repo, following `addons/README.md`, so it is
+It ships as an add-on in `addons/frigate-glance/` of this repo, following `addons/README.md`, so it is
 likely the first add-on listed there.
 
 The pop-up over whatever is playing is the point of version 1. The app's own tile is mostly the way into
@@ -52,7 +52,7 @@ its settings.
 ## Constraints
 
 - **Add-on rules** (`addons/README.md`, `docs/modules.md`, `docs/specs/card.md`, `tests/test_addons.py`):
-  own Gradle project in `addons/peek-tv/` with `settings.gradle`, `app/` and `gradlew`; own package
+  own Gradle project in `addons/frigate-glance/` with `settings.gradle`, `app/` and `gradlew`; own package
   name; a README with a `Permissions` heading listing every permission, the network access and the
   background service, and why; a row in the `addons/README.md` table; no APKs in the repo; tested on
   a real TV; own art (no Frigate or Peek logos it has no right to); MIT credit to Peek for anything ported.
@@ -60,7 +60,7 @@ its settings.
   and `platforms;android-34 build-tools;34.0.0` (`.github/workflows/addons.yml`). Must also build
   locally with the JDK 21 the owner has.
 - **Module card**: declared on the settings activity exactly as `docs/modules.md` shows. Label
-  `Peek`, caption showing state (see Settings), an accent colour of its own **(my call)**. The label
+  `Frigate Glance` (the owner's choice of name), caption showing state (see Settings), an accent colour of its own **(my call)**. The label
   must not clash with another installed app's label.
 - **Hardware**: test TV is a TCL 65Q650G (Android TV 11, SDK 30, Realtek RTD2851, armv7 32-bit
   userspace, 2 GB RAM, BT remote `BT_RC813_M1`). The repo targets TVs with as little as 1 GB.
@@ -147,7 +147,7 @@ D-pad: lists and toggles only, no text fields.
   `dismissSeconds`), plus the TV-only keys (`severity`, `liveVideo`, `boxes`, `dismissKey`,
   `snoozeKey`, `snoozeMinutes`). The README documents every key in a table, so an assistant can write
   the file without guessing.
-- A script in `addons/peek-tv/` (not in `launcher/`) installs the APK and pushes the config the way
+- A script in `addons/frigate-glance/` (not in `launcher/`) installs the APK and pushes the config the way
   `tools/theme.sh` does, including its fallback for firmware that locks the shell out of
   `Android/data`. It also grants "display over other apps" and `APP_AUTO_START`, enables the
   accessibility service, starts the app, and checks the app can reach MQTT and Frigate, saying
@@ -192,7 +192,7 @@ On the 65Q650G with the real remote (injected keys don't reach accessibility ser
 
 ## Delivering it
 
-On branch `addons/peek-tv` of the owner's fork: `addons/peek-tv/` with its README (Permissions,
+On branch `addons/frigate-glance` of the owner's fork: `addons/frigate-glance/` with its README (Permissions,
 config keys, setup, the TV it was tested on, a screenshot of the card), a row in the `addons/README.md`
-table, and credit to Peek. The PR to upstream carries only those; this design document stays on the
+table, and credit to Peek, and a line saying it is a community add-on not made by or affiliated with the Frigate project. The PR to upstream carries only those; this design document stays on the
 fork **(my call)**.
