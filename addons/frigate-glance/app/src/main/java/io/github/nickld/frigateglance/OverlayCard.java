@@ -71,6 +71,7 @@ final class OverlayCard implements CardView {
     private BoxView boxes;
     /** Peek's timer bar: red and full while the event goes on, white and shrinking once it has ended. */
     private View timerBar;
+    private ModeBadge badge;
     private boolean countingDown;
     private TextView info, footer;
     private volatile String reviewId;
@@ -137,11 +138,13 @@ final class OverlayCard implements CardView {
         live = new LiveVideo(context, new LiveVideo.Listener() {
             @Override
             public void onPlaying() {
+                if (badge != null) badge.setLive(true);
                 if (video != null) video.animate().alpha(1f).setDuration(300).start();
             }
 
             @Override
             public void onGaveUp() {
+                if (badge != null) badge.setLive(false);
                 if (video != null) video.setAlpha(0f);
                 refresh(id, camera);
             }
@@ -174,6 +177,7 @@ final class OverlayCard implements CardView {
             live = null;
         }
         if (video != null) video.setAlpha(0f);
+        if (badge != null) badge.setLive(false);
     }
 
     @Override
@@ -225,6 +229,10 @@ final class OverlayCard implements CardView {
         timerBar = new View(context);
         timerBar.setPivotX(0f);
         picture.addView(timerBar, new FrameLayout.LayoutParams(-1, px(3), Gravity.TOP));
+        badge = new ModeBadge(context, 9 * scale());
+        FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
+        bp.setMargins(0, px(8), px(6), 0);
+        picture.addView(badge, bp);
         root.addView(picture, new LinearLayout.LayoutParams(px(WIDTH_DP), px(WIDTH_DP * 9 / 16)));
 
         footer = text(10, 0xFF8B949E, Typeface.DEFAULT);

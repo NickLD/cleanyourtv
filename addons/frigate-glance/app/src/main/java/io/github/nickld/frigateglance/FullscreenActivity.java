@@ -31,6 +31,7 @@ public class FullscreenActivity extends Activity {
     private LiveVideo live;
     private ImageView image;
     private TextureView video;
+    private ModeBadge badge;
     private String camera;
     private boolean refreshing;
 
@@ -69,6 +70,10 @@ public class FullscreenActivity extends Activity {
         int pad = Math.round(24 * dp);
         title.setPadding(pad, pad, pad, pad);
         root.addView(title, new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START));
+        badge = new ModeBadge(this, 14);
+        FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
+        bp.setMargins(0, pad, pad, 0);
+        root.addView(badge, bp);
         setContentView(root);
         View decor = getWindow().getDecorView();
         decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
@@ -87,11 +92,13 @@ public class FullscreenActivity extends Activity {
             @Override
             public void onPlaying() {
                 video.animate().alpha(1f).setDuration(300).start();
+                badge.setLive(true);
             }
 
             @Override
             public void onGaveUp() {
                 video.setAlpha(0f);
+                badge.setLive(false);
                 startRefresh();
             }
         });
