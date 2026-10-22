@@ -229,7 +229,7 @@ final class OverlayCard implements CardView {
         timerBar = new View(context);
         timerBar.setPivotX(0f);
         picture.addView(timerBar, new FrameLayout.LayoutParams(-1, px(3), Gravity.TOP));
-        badge = new ModeBadge(context, 9 * scale());
+        badge = new ModeBadge(context, 14 * scale());
         FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
         bp.setMargins(0, px(8), px(6), 0);
         picture.addView(badge, bp);

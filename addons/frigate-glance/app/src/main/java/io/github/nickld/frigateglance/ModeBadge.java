@@ -2,27 +2,28 @@ package io.github.nickld.frigateglance;
 
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
-import android.widget.TextView;
+import android.widget.ImageView;
 
-/** The corner badge on the picture: "● LIVE" while live video plays, "FRAME" while it shows snapshots. */
-final class ModeBadge extends TextView {
+/** The corner badge on the picture: a video camera on red while live video plays, stacked frames for snapshots. */
+final class ModeBadge extends ImageView {
     private final GradientDrawable background = new GradientDrawable();
 
-    ModeBadge(Context context, float textSp) {
+    /** size: the icon's height in dp, before padding. */
+    ModeBadge(Context context, float size) {
         super(context);
         float dp = context.getResources().getDisplayMetrics().density;
-        background.setCornerRadius(4 * dp * textSp / 10f);
+        background.setCornerRadius(size * dp / 3f);
         setBackground(background);
-        setTextSize(textSp);
-        setTextColor(0xFFFFFFFF);
-        setLetterSpacing(0.08f);
-        int h = Math.round(5 * dp * textSp / 10f), v = Math.round(2 * dp * textSp / 10f);
-        setPadding(h, v, h, v);
+        int pad = Math.round(size * dp / 5f);
+        setPadding(pad * 2, pad, pad * 2, pad);
+        setAdjustViewBounds(true);
+        setMaxHeight(Math.round(size * dp) + 2 * pad);
         setLive(false);
     }
 
     void setLive(boolean live) {
-        setText(live ? "● LIVE" : "FRAME");
+        setImageResource(live ? R.drawable.ic_live : R.drawable.ic_frames);
         background.setColor(live ? 0xD9DC3C3C : 0x99000000);
+        setContentDescription(live ? "Live video" : "Snapshots");
     }
 }
