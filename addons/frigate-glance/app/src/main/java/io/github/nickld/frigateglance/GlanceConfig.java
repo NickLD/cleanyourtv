@@ -27,6 +27,10 @@ public final class GlanceConfig {
     public final Map<String, String> cameras;
     /** Camera name to the go2rtc stream for live video, when it should not be Frigate's live stream. */
     public final Map<String, String> streams;
+    /** Cameras switched off on the settings screen. */
+    public final Set<String> camerasOff;
+    /** Cameras Frigate gains later (not in "cameras") open cards too. Only matters while "cameras" lists some. */
+    public final boolean newCameras;
     /** Object labels that may open a card; empty means every label. */
     public final Set<String> labels;
     public final int dismissSeconds, snoozeMinutes;
@@ -54,6 +58,8 @@ public final class GlanceConfig {
         if (dismissKey.equals(snoozeKey)) throw new IllegalArgumentException("dismissKey and snoozeKey are the same key");
         cameras = cameras(o.optJSONObject("cameras"));
         streams = cameras(o.optJSONObject("streams"));
+        camerasOff = labels(o.optJSONArray("camerasOff"));
+        newCameras = o.optBoolean("newCameras", false);
         labels = labels(o.optJSONArray("labels"));
     }
 
@@ -94,6 +100,8 @@ public final class GlanceConfig {
             o.put("rtspPassword", rtspPassword);
             o.put("cameras", new JSONObject(cameras));
             o.put("streams", new JSONObject(streams));
+            o.put("camerasOff", new JSONArray(camerasOff));
+            o.put("newCameras", newCameras);
             o.put("labels", new JSONArray(labels));
             o.put("severity", severity);
             o.put("corner", corner);

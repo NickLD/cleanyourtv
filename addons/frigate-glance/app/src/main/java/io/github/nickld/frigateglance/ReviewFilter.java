@@ -15,13 +15,20 @@ public final class ReviewFilter {
         return camera.startsWith(REPLAY_PREFIX) ? camera.substring(REPLAY_PREFIX.length()) : camera;
     }
 
+    /** Switched off on the settings screen: never. Else listed in "cameras", or every camera when the list is empty
+     *  or newCameras is on. */
+    static boolean cameraOn(GlanceConfig c, String camera) {
+        if (c.camerasOff.contains(camera)) return false;
+        return c.newCameras || c.cameras.isEmpty() || c.cameras.containsKey(camera);
+    }
+
     public boolean shows(Review r, long nowMs, long snoozedUntilMs) {
         if (nowMs < snoozedUntilMs) return false;
         if (!"alert".equals(r.severity)
                 && !("detection".equals(r.severity) && "alerts_and_detections".equals(config.severity))) {
             return false;
         }
-        if (!config.cameras.isEmpty() && !config.cameras.containsKey(baseCamera(r.camera))) return false;
+        if (!cameraOn(config, baseCamera(r.camera))) return false;
         if (config.labels.isEmpty()) return true;
         for (String o : r.objects) if (config.labels.contains(o)) return true;
         return false;

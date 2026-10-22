@@ -57,7 +57,10 @@ public class GlanceService extends Service {
     private volatile long lastRefetch;
     private static final long REFETCH_EVERY_MS = 60_000;
     private OverlayCard card;
-    private boolean mqttUp, frigateUp;
+    private volatile boolean mqttUp, frigateUp;
+    /** Wall-clock times for the settings screen's Overview: 0 means never. */
+    private volatile long mqttSince, frigateSince, lastMessageAt;
+    private volatile String mqttError = "", frigateError = "";
 
     public static void start(Context context) {
         context.startForegroundService(new Intent(context, GlanceService.class));
@@ -138,6 +141,46 @@ public class GlanceService extends Service {
     public static boolean isCardShowing() {
         GlanceService s = instance;
         return s != null && s.card != null && s.card.reviewId() != null;
+    }
+
+    /** What the Overview shows; read from the settings screen's thread, so a copy of volatile fields. */
+    static final class Overview {
+        boolean running, mqttUp, frigateUp;
+        String mqttHost = "", frigateHost = "", mqttError = "", frigateError = "";
+        long mqttSince, frigateSince, lastMessageAt;
+        int cameras;
+    }
+
+    static Overview overview() {
+        Overview o = new Overview();
+        GlanceService s = instance;
+        if (s == null) return o;
+        o.running = true;
+        o.mqttUp = s.mqttUp;
+        o.frigateUp = s.frigateUp;
+        o.mqttSince = s.mqttSince;
+        o.frigateSince = s.frigateSince;
+        o.lastMessageAt = s.lastMessageAt;
+        o.mqttError = s.mqttError;
+        o.frigateError = s.frigateError;
+        o.cameras = s.cameraNames.size();
+        GlanceConfig c = s.config;
+        if (c != null) {
+            o.mqttHost = hostPort(c.mqttUrl, 1883);
+            o.frigateHost = hostPort(c.frigateUrl, -1);
+        }
+        return o;
+    }
+
+    /** host:port of a URL, without the user and password it may carry. */
+    static String hostPort(String url, int defaultPort) {
+        try {
+            java.net.URI u = new java.net.URI(url);
+            int port = u.getPort() > 0 ? u.getPort() : defaultPort;
+            return u.getHost() + (port > 0 ? ":" + port : "");
+        } catch (java.net.URISyntaxException | RuntimeException e) {
+            return "";
+        }
     }
 
     public static String statusLine() {
@@ -224,18 +267,23 @@ public class GlanceService extends Service {
                 public void onConnected() {
                     connected[0] = true;
                     mqttUp = true;
+                    mqttSince = System.currentTimeMillis();
+                    mqttError = "";
                     Log.i(TAG, "mqtt connected");
                     updateStatus();
                 }
 
                 @Override
                 public void onMessage(String topic, byte[] payload) {
+                    lastMessageAt = System.currentTimeMillis();
                     route(topic, new String(payload, StandardCharsets.UTF_8));
                 }
 
                 @Override
                 public void onDisconnected(Exception cause) {
                     mqttUp = false;
+                    mqttSince = System.currentTimeMillis();
+                    mqttError = cause.getMessage() == null ? "" : cause.getMessage();
                     if (running && gen == generation) Log.w(TAG, "mqtt error: " + cause.getMessage());
                     updateStatus();
                 }
@@ -267,10 +315,14 @@ public class GlanceService extends Service {
             if (cams != null) for (java.util.Iterator<String> it = cams.keys(); it.hasNext(); ) names.add(it.next());
             Collections.sort(names);
             cameraNames = names;
+            if (!frigateUp) frigateSince = System.currentTimeMillis();
             frigateUp = true;
+            frigateError = "";
             Log.i(TAG, "frigate ok");
         } catch (IOException | RuntimeException e) {
+            if (frigateUp || frigateSince == 0) frigateSince = System.currentTimeMillis();
             frigateUp = false;
+            frigateError = e.getMessage() == null ? "" : e.getMessage();
             Log.w(TAG, "frigate error: " + e.getMessage());
         }
         updateStatus();

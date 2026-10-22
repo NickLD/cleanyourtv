@@ -64,4 +64,15 @@ public class ReviewFilterTest {
         assertEquals("shop", ReviewFilter.baseCamera("_replay_shop"));
         assertEquals("shop", ReviewFilter.baseCamera("shop"));
     }
+
+    @Test
+    public void newCamerasLetsACameraOutsideTheListIn() {
+        assertTrue(filter("{\"cameras\":{\"driveway\":\"D\"},\"newCameras\":true}").shows(review("alert", "backyard", "person"), NOW, 0));
+        assertFalse(filter("{\"cameras\":{\"driveway\":\"D\"}}").shows(review("alert", "backyard", "person"), NOW, 0));
+    }
+
+    @Test
+    public void cameraSwitchedOffStaysOffEvenWithNewCameras() {
+        assertFalse(filter("{\"newCameras\":true,\"camerasOff\":[\"shop\"]}").shows(review("alert", "_replay_shop", "person"), NOW, 0));
+    }
 }

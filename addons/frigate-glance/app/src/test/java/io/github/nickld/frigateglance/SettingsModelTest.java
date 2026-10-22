@@ -21,6 +21,11 @@ public class SettingsModelTest {
     }
 
     @Test
+    public void replayCamerasGetNoSwitchOfTheirOwn() throws Exception {
+        assertEquals(List.of("shop"), SettingsModel.cameraNames(new JSONObject("{\"cameras\":{\"shop\":{},\"_replay_shop\":{}}}")));
+    }
+
+    @Test
     public void camerasComeSortedFromFrigate() throws Exception {
         assertEquals(List.of("driveway", "frontdoooor", "shop"), SettingsModel.cameraNames(new JSONObject(FRIGATE)));
     }
@@ -36,28 +41,32 @@ public class SettingsModelTest {
     }
 
     @Test
-    public void turningOneCameraOffListsTheOthers() throws Exception {
-        JSONObject cams = SettingsModel.toggleCamera(config(""), List.of("driveway", "frontdoooor", "shop"), "shop");
-        assertEquals(2, cams.length());
-        assertTrue(cams.has("driveway"));
-        assertFalse(cams.has("shop"));
-        assertEquals("Frontdoooor", cams.getString("frontdoooor"));
+    public void turningACameraOffListsItAsOff() throws Exception {
+        JSONObject ch = SettingsModel.toggleCamera(config(""), List.of("driveway", "frontdoooor", "shop"), "shop");
+        assertEquals("[\"shop\"]", ch.getJSONArray("camerasOff").toString());
+        assertFalse(SettingsModel.cameraOn(config(",\"camerasOff\":[\"shop\"]"), "shop"));
     }
 
     @Test
-    public void turningACameraBackOnKeepsDisplayNames() throws Exception {
+    public void turningItBackOnClearsIt() throws Exception {
+        JSONObject ch = SettingsModel.toggleCamera(config(",\"camerasOff\":[\"shop\"]"), List.of("driveway", "shop"), "shop");
+        assertEquals(0, ch.getJSONArray("camerasOff").length());
+    }
+
+    @Test
+    public void aCameraMissingFromTheListIsAddedWithItsName() throws Exception {
         GlanceConfig c = config(",\"cameras\":{\"driveway\":\"Drive\"}");
-        JSONObject cams = SettingsModel.toggleCamera(c, List.of("driveway", "shop"), "shop");
+        assertFalse(SettingsModel.cameraOn(c, "shop"));
+        JSONObject cams = SettingsModel.toggleCamera(c, List.of("driveway", "shop"), "shop").getJSONObject("cameras");
         assertEquals("Drive", cams.getString("driveway"));
         assertEquals("Shop", cams.getString("shop"));
     }
 
     @Test
-    public void allCamerasOnAgainStayListedWithTheirNames() throws Exception {
-        GlanceConfig c = config(",\"cameras\":{\"driveway\":\"Drive\"}");
-        JSONObject cams = SettingsModel.toggleCamera(c, List.of("driveway", "shop"), "shop");
-        assertEquals(2, cams.length());
-        assertEquals("Drive", cams.getString("driveway"));
+    public void newCamerasOnLetsUnlistedCamerasIn() {
+        GlanceConfig c = config(",\"cameras\":{\"driveway\":\"Drive\"},\"newCameras\":true");
+        assertTrue(SettingsModel.cameraOn(c, "backyard"));
+        assertFalse(SettingsModel.cameraOn(config(",\"cameras\":{\"driveway\":\"Drive\"},\"newCameras\":true,\"camerasOff\":[\"backyard\"]"), "backyard"));
     }
 
     @Test
@@ -71,8 +80,7 @@ public class SettingsModelTest {
     @Test
     public void lastCameraCannotBeTurnedOff() throws Exception {
         GlanceConfig c = config(",\"cameras\":{\"shop\":\"Shop\"}");
-        JSONObject cams = SettingsModel.toggleCamera(c, List.of("driveway", "shop"), "shop");
-        assertTrue(cams.has("shop"));
+        assertEquals(0, SettingsModel.toggleCamera(c, List.of("driveway", "shop"), "shop").length());
     }
 
     @Test

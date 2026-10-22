@@ -89,9 +89,15 @@ final class OverlayCard implements CardView {
         config = c;
     }
 
+    /** The last card shown, for the settings screen's Overview. */
+    static volatile String lastTitle = "";
+    static volatile long lastShownAt;
+
     @Override
     public void show(CardModel m) {
         reviewId = m.reviewId;
+        lastTitle = m.title + (m.detail.isEmpty() ? "" : " · " + m.detail);
+        lastShownAt = System.currentTimeMillis();
         main.post(() -> {
             boolean fresh = root == null;
             if (fresh) build();

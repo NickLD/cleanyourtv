@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -25,7 +26,13 @@ final class SettingsModel {
     static List<String> cameraNames(JSONObject frigate) {
         List<String> out = new ArrayList<>();
         JSONObject cams = frigate == null ? null : frigate.optJSONObject("cameras");
-        if (cams != null) for (Iterator<String> it = cams.keys(); it.hasNext(); ) out.add(it.next());
+        if (cams != null) {
+            for (Iterator<String> it = cams.keys(); it.hasNext(); ) {
+                String name = it.next();
+                // A debug replay counts as the camera it replays, so it gets no switch of its own.
+                if (!name.startsWith(ReviewFilter.REPLAY_PREFIX)) out.add(name);
+            }
+        }
         Collections.sort(out);
         return out;
     }
@@ -48,23 +55,36 @@ final class SettingsModel {
     }
 
     static boolean cameraOn(GlanceConfig c, String camera) {
-        return c.cameras.isEmpty() || c.cameras.containsKey(camera);
+        return ReviewFilter.cameraOn(c, camera);
     }
 
     static boolean labelOn(GlanceConfig c, String label) {
         return c.labels.isEmpty() || c.labels.contains(label);
     }
 
-    /** The "cameras" value after switching one camera; the last camera on cannot be switched off. */
+    /**
+     * The settings to save after switching one camera: "camerasOff", and "cameras" when a camera outside that list
+     * is switched on. Empty when nothing changes (the last camera on cannot be switched off).
+     */
     static JSONObject toggleCamera(GlanceConfig c, List<String> all, String camera) throws JSONException {
-        JSONObject out = new JSONObject();
-        for (String name : all) {
-            boolean on = cameraOn(c, name);
-            if (name.equals(camera)) on = !on;
-            if (on) out.put(name, displayName(c, name));
+        JSONObject changes = new JSONObject();
+        Set<String> off = new TreeSet<>(c.camerasOff);
+        if (cameraOn(c, camera)) {
+            int on = 0;
+            for (String name : all) if (cameraOn(c, name)) on++;
+            if (on <= 1) return changes;
+            off.add(camera);
+        } else {
+            off.remove(camera);
+            if (!c.newCameras && !c.cameras.isEmpty() && !c.cameras.containsKey(camera)) {
+                JSONObject cams = new JSONObject();
+                for (Map.Entry<String, String> e : c.cameras.entrySet()) cams.put(e.getKey(), e.getValue());
+                cams.put(camera, displayName(c, camera));
+                changes.put("cameras", cams);
+            }
         }
-        if (out.length() == 0) out.put(camera, displayName(c, camera));
-        return out;
+        changes.put("camerasOff", new JSONArray(off));
+        return changes;
     }
 
     /** The "labels" value after switching one label; empty means every label. */

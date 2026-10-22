@@ -33,7 +33,7 @@ public class SettingsActivity extends Activity {
     private LinearLayout menu, rows;
     private ConfigStore store;
     private TextView status;
-    private SettingRow snoozeRow;
+    private SettingRow snoozeRow, mqttRow, frigateRow, messagesRow, lastCardRow, tvRow;
     private int section;
     private boolean waitingForFrigate;
     private final Runnable refresh = new Runnable() {
@@ -119,7 +119,7 @@ public class SettingsActivity extends Activity {
     /** Rebuilds the right side for the current section; focusIndex keeps focus on a row after a change. */
     private void buildRows(int focusIndex) {
         rows.removeAllViews();
-        snoozeRow = null;
+        snoozeRow = mqttRow = frigateRow = messagesRow = lastCardRow = tvRow = null;
         GlanceConfig c = store.load();
         if (c == null) {
             rows.addView(new SettingRow(this, "No config yet", "push one with install.sh", null));
@@ -129,22 +129,46 @@ public class SettingsActivity extends Activity {
         waitingForFrigate = frigate == null;
         switch (SECTIONS[section]) {
             case "Overview":
+                mqttRow = info("MQTT broker", "");
+                frigateRow = info("Frigate", "");
+                messagesRow = info("Last message from Frigate", "");
+                lastCardRow = info("Last card", "");
+                tvRow = info("On this TV", "");
                 snoozeRow = row("Snooze", "No cards from any camera for the snooze length (Remote section). OK again resumes.", "", () -> {
                     if (GlanceService.snoozedUntilWallClock() > 0) GlanceService.resume();
                     else GlanceService.snoozeCard();
                     main.postDelayed(this::updateLive, 200);
                 });
-                row("Show a test card", "Shows a card now, to check where it sits and that the remote buttons work.", "", () -> GlanceService.showTestCard(this, null));
                 break;
             case "Cameras":
                 List<String> cameras = SettingsModel.cameraNames(frigate);
+                row("New cameras", "Cameras added to Frigate later open cards too, without switching them on here."
+                        + " Cameras switched off below stay off.", onOff(c.newCameras || c.cameras.isEmpty()),
+                        () -> save(cfg -> {
+                            boolean on = cfg.newCameras || cfg.cameras.isEmpty();
+                            if (on && cfg.cameras.isEmpty()) {
+                                // "No list" meant every camera: switching new ones off keeps today's as the list.
+                                JSONObject names = new JSONObject();
+                                try {
+                                    for (String cam : cameras) names.put(cam, CardController.pretty(cam));
+                                } catch (JSONException ignored) {
+                                    // names stay as far as they got
+                                }
+                                store.saveSetting("cameras", names);
+                            }
+                            store.saveSetting("newCameras", !on);
+                        }));
                 if (cameras.isEmpty()) rows.addView(new SettingRow(this, "Cameras", "waiting for Frigate", null));
                 for (String cam : cameras) {
                     String name = c.cameras.containsKey(cam) ? c.cameras.get(cam) : CardController.pretty(cam);
-                    row(name, "Alerts from the " + CardController.pretty(cam).toLowerCase(java.util.Locale.ROOT) + " camera open a card.",
+                    row(name, "Alerts from this camera open a card.",
                             onOff(SettingsModel.cameraOn(c, cam)), () -> save(cfg -> {
                         try {
-                            store.saveSetting("cameras", SettingsModel.toggleCamera(cfg, cameras, cam));
+                            JSONObject changes = SettingsModel.toggleCamera(cfg, cameras, cam);
+                            for (java.util.Iterator<String> it = changes.keys(); it.hasNext(); ) {
+                                String key = it.next();
+                                store.saveSetting(key, changes.get(key));
+                            }
                         } catch (JSONException ignored) {
                             // unchanged
                         }
@@ -165,6 +189,7 @@ public class SettingsActivity extends Activity {
                 }
                 break;
             case "Card":
+                row("Show a test card", "Shows a card now, to check where it sits and that the remote buttons work.", "", () -> GlanceService.showTestCard(this, null));
                 row("Corner", "Which corner of the screen the card slides into.", CORNER_NAMES.get(c.corner),
                         () -> save(cfg -> store.saveSetting("corner", SettingsModel.next(SettingsModel.CORNERS, cfg.corner))));
                 row("Card stays", "How long the card stays once the event has ended, while the bar on top runs down.",
@@ -236,6 +261,13 @@ public class SettingsActivity extends Activity {
         }
     }
 
+    /** A status line in Overview: not focusable, refreshed every two seconds by updateLive. */
+    private SettingRow info(String name, String value) {
+        SettingRow r = new SettingRow(this, name, "", value, null);
+        rows.addView(r, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return r;
+    }
+
     private SettingRow row(String name, String description, String value, Runnable onClick) {
         SettingRow r = new SettingRow(this, name, description, value, onClick);
         rows.addView(r, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -244,6 +276,23 @@ public class SettingsActivity extends Activity {
 
     private void updateLive() {
         status.setText(GlanceService.statusLine());
+        if (mqttRow != null) {
+            GlanceService.Overview o = GlanceService.overview();
+            mqttRow.setDetail(o.mqttHost);
+            mqttRow.setValue(!o.running ? "Not running" : o.mqttUp ? "Connected " + ago(o.mqttSince)
+                    : "Not connected" + (o.mqttError.isEmpty() ? "" : ": " + o.mqttError));
+            frigateRow.setDetail(o.frigateHost + (o.cameras > 0 ? " · " + o.cameras + " cameras" : ""));
+            frigateRow.setValue(!o.running ? "Not running" : o.frigateUp ? "Reachable"
+                    : "Not reached" + (o.frigateError.isEmpty() ? "" : ": " + o.frigateError));
+            messagesRow.setDetail("An alert or a tracked object. Quiet is normal while nothing moves.");
+            messagesRow.setValue(o.lastMessageAt == 0 ? "None yet" : ago(o.lastMessageAt));
+            lastCardRow.setDetail(OverlayCard.lastTitle);
+            lastCardRow.setValue(OverlayCard.lastShownAt == 0 ? "None yet" : ago(OverlayCard.lastShownAt));
+            boolean overlay = android.provider.Settings.canDrawOverlays(this);
+            tvRow.setDetail("Version " + version() + " · display over other apps " + (overlay ? "allowed" : "NOT allowed")
+                    + " · remote buttons " + (KeyService.isRunning() ? "on" : "off (run install.sh)"));
+            tvRow.setValue(overlay && KeyService.isRunning() ? "Ready" : "Needs install.sh");
+        }
         if (snoozeRow != null) {
             long until = GlanceService.snoozedUntilWallClock();
             snoozeRow.setValue(until > 0
@@ -254,6 +303,23 @@ public class SettingsActivity extends Activity {
         if (waitingForFrigate && GlanceService.frigateConfig() != null) {
             View focused = getCurrentFocus();
             buildRows(focused == null ? -1 : rows.indexOfChild(focused));
+        }
+    }
+
+    /** "12 s ago", "5 min ago", or the time of day for anything older than an hour. */
+    private String ago(long when) {
+        if (when == 0) return "";
+        long s = (System.currentTimeMillis() - when) / 1000;
+        if (s < 60) return Math.max(0, s) + " s ago";
+        if (s < 3600) return (s / 60) + " min ago";
+        return "at " + DateFormat.getTimeFormat(this).format(new Date(when));
+    }
+
+    private String version() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+            return "?";
         }
     }
 

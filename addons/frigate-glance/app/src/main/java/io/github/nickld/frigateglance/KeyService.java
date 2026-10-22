@@ -21,6 +21,11 @@ public class KeyService extends AccessibilityService {
     private final Handler main = new Handler(Looper.getMainLooper());
     private KeyRules rules = new KeyRules(0, 0);
 
+    /** True while Android has the service bound, so the remote buttons can work. */
+    static boolean isRunning() {
+        return instance != null;
+    }
+
     /** Called when a card appears or leaves. */
     static void setFiltering(boolean cardShowing) {
         showing = cardShowing;

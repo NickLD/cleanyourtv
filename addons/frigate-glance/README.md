@@ -61,6 +61,8 @@ and `TestCardReceiver` shows a test card over whatever is playing.
 | `frigateUser`, `frigatePassword` | empty | Frigate login; the certificate is trusted on first contact and pinned |
 | `topicPrefix` | `frigate` | Frigate's MQTT topic prefix |
 | `cameras` | `{}` (all) | camera name to the name shown on the card; listed cameras only |
+| `newCameras` | `false` | with `cameras` listed: cameras Frigate gains later open cards too |
+| `camerasOff` | `[]` | cameras switched off (the settings screen writes this) |
 | `labels` | `[]` (all) | objects that may open a card, e.g. `["person"]` |
 | `severity` | `alerts` | `alerts`, or `alerts_and_detections` |
 | `corner` | `top-right` | `top-left`, `bottom-left`, `bottom-right` |
