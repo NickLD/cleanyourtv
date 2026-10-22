@@ -142,4 +142,29 @@ public class GlanceConfigTest {
     public void frigateHostFromUrl() {
         assertEquals("192.168.4.58", GlanceConfig.parse("{" + REQUIRED + "}").frigateHost());
     }
+
+    @Test
+    public void mqttWithoutSchemeIsRejectedWithoutEchoingIt() {
+        try {
+            GlanceConfig.parse("{\"mqtt\":\"u:secretpw@192.168.4.56:1883\",\"frigateUrl\":\"https://h:8971\"}");
+            org.junit.Assert.fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertFalse(e.getMessage(), e.getMessage().contains("secretpw"));
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void mqttWithUnencodedCharactersIsRejected() {
+        GlanceConfig.parse("{\"mqtt\":\"mqtt://u:p#w%@h:1883\",\"frigateUrl\":\"https://h:8971\"}");
+    }
+
+    @Test
+    public void invalidJsonMessageDoesNotEchoTheFile() {
+        try {
+            GlanceConfig.parse("{\"frigatePassword\":\"secretpw\" oops}");
+            org.junit.Assert.fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertFalse(e.getMessage(), e.getMessage().contains("secretpw"));
+        }
+    }
 }

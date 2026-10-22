@@ -26,6 +26,14 @@ except Exception as e:
 missing = [k for k in ("mqtt", "frigateUrl") if not str(c.get(k, "")).strip()]
 if missing:
     sys.exit("config needs " + ", ".join(missing))
+from urllib.parse import urlsplit
+try:
+    u = urlsplit(c["mqtt"])
+    ok = u.scheme == "mqtt" and bool(u.hostname) and not any(ch in c["mqtt"] for ch in " #?")
+except ValueError:
+    ok = False
+if not ok:   # the value holds a password: never print it
+    sys.exit('"mqtt" must look like mqtt://user:password@host:1883, special characters percent-encoded')
 EOF
 
 [ -f local.properties ] || { [ -n "${ANDROID_HOME:-}" ] && echo "sdk.dir=$ANDROID_HOME" > local.properties; } || true
@@ -41,9 +49,13 @@ case "$OUT" in *Success*) ;; *) echo "ERROR: pm install failed" >&2; exit 1 ;; e
 tv "appops set $PKG SYSTEM_ALERT_WINDOW allow; cmd appops set $PKG APP_AUTO_START allow 2>/dev/null; echo permissions granted"
 
 # The config goes into the app's files folder, or through its provider where the shell may not write there.
+# The log is cleared first: through the provider the service picks the config up, and logs its connection, at once.
+tv "logcat -c" >/dev/null
 STAGE=/data/local/tmp/fg-config.json
 tv --push "$CONFIG" "$STAGE" >/dev/null
-tv "d=/sdcard/Android/data/$PKG/files; { mkdir -p \$d 2>/dev/null && cp $STAGE \$d/config.json 2>/dev/null; } || content write --uri content://$PKG.config/config.json < $STAGE; rm -f $STAGE; echo config pushed"
+OUT=$(tv "d=/sdcard/Android/data/$PKG/files; if { mkdir -p \$d 2>/dev/null && cp $STAGE \$d/config.json 2>/dev/null; } || content write --uri content://$PKG.config/config.json < $STAGE; then echo config pushed; else echo config not written; fi; rm -f $STAGE")
+echo "$OUT"
+case "$OUT" in *"config pushed"*) ;; *) echo "ERROR: the config could not be written on the TV" >&2; exit 1 ;; esac
 
 # The key service, added to whatever accessibility services are already on (the launcher's, for one). A service
 # that was already listed is unbound by the reinstall and binds again only once the list changes.
@@ -51,7 +63,7 @@ SVC=$PKG/.KeyService
 tv "s=\$(settings get secure enabled_accessibility_services); case \"\$s\" in *$SVC*) settings put secure enabled_accessibility_services \"\$s\"; settings put secure accessibility_enabled 1; sleep 1; settings put secure enabled_accessibility_services ''; settings put secure accessibility_enabled 0; sleep 1; settings put secure enabled_accessibility_services \"\$s\" ;; null|'') settings put secure enabled_accessibility_services $SVC ;; *) settings put secure enabled_accessibility_services \"\$s:$SVC\" ;; esac; settings put secure accessibility_enabled 1; echo key service enabled"
 
 # Start it, then wait up to 20 s for the connection lines the service logs.
-tv "logcat -c; am start -n $PKG/.SettingsActivity >/dev/null" >/dev/null
+tv "am start -n $PKG/.SettingsActivity >/dev/null" >/dev/null
 LOG=""
 for _ in $(seq 1 10); do
   sleep 2

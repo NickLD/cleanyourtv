@@ -36,7 +36,7 @@ public final class GlanceConfig {
 
     private GlanceConfig(JSONObject o) {
         source = o;
-        mqttUrl = required(o, "mqtt");
+        mqttUrl = mqtt(required(o, "mqtt"));
         frigateUrl = stripSlash(required(o, "frigateUrl"));
         frigateUser = o.optString("frigateUser", "");
         frigatePassword = o.optString("frigatePassword", "");
@@ -62,7 +62,8 @@ public final class GlanceConfig {
         try {
             return new GlanceConfig(new JSONObject(json));
         } catch (JSONException e) {
-            throw new IllegalArgumentException("config is not valid JSON: " + e.getMessage(), e);
+            // Android's org.json repeats the whole input in its messages: passwords included. Say only where.
+            throw new IllegalArgumentException("config is not valid JSON");
         }
     }
 
@@ -117,6 +118,18 @@ public final class GlanceConfig {
             if (i >= 0 && i < end) end = i;
         }
         return s.substring(0, end);
+    }
+
+    /** mqtt://user:password@host:port with a host; the message never repeats the value (it holds a password). */
+    private static String mqtt(String url) {
+        try {
+            java.net.URI u = new java.net.URI(url);
+            if ("mqtt".equalsIgnoreCase(u.getScheme()) && u.getHost() != null) return url;
+        } catch (java.net.URISyntaxException e) {
+            // reported below
+        }
+        throw new IllegalArgumentException("\"mqtt\" must look like mqtt://user:password@host:1883, with characters"
+                + " other than letters and digits in the user or password percent-encoded");
     }
 
     private static String required(JSONObject o, String k) {

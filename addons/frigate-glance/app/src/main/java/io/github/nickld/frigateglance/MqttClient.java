@@ -42,11 +42,19 @@ public final class MqttClient {
     private final int port;
     private final List<String> topics;
     private final Listener listener;
+    private final java.util.function.LongSupplier clock;
+    private long lastWrite;
     private volatile Socket socket;
     private volatile boolean stopped;
 
     /** url: mqtt://user:pass@host:port, user and password percent-encoded; port 1883 when left out. */
     public MqttClient(String url, String clientId, List<String> topics, Listener listener) {
+        this(url, clientId, topics, listener, android.os.SystemClock::elapsedRealtime);
+    }
+
+    /** clock: milliseconds, for the keep-alive; tests pass their own. */
+    MqttClient(String url, String clientId, List<String> topics, Listener listener, java.util.function.LongSupplier clock) {
+        this.clock = clock;
         URI u = URI.create(url);
         host = u.getHost();
         port = u.getPort() > 0 ? u.getPort() : 1883;
@@ -73,8 +81,8 @@ public final class MqttClient {
             s.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MS);
             s.setSoTimeout(PING_EVERY_MS);
             session(s.getInputStream(), s.getOutputStream());
-        } catch (IOException e) {
-            listener.onDisconnected(e);
+        } catch (IOException | RuntimeException e) {
+            listener.onDisconnected(e instanceof IOException ? e : new IOException("bad broker address or packet", e));
         } finally {
             closeQuietly();
         }
@@ -105,16 +113,26 @@ public final class MqttClient {
             }
             out.write(subscribePacket());
             out.flush();
+            lastWrite = clock.getAsLong();
             listener.onConnected();
             while (!stopped) {
                 header = readHeader(in, out);
                 byte[] body = new byte[header[1]];
                 in.readFully(body);
                 if ((header[0] & 0xF0) == 0x30) deliver(header[0], body);
+                // A steady stream of messages never lets the read time out, but the broker drops a client it
+                // has not heard from for 1.5 keep-alives: ping on schedule whatever arrives.
+                if (clock.getAsLong() - lastWrite >= PING_EVERY_MS) {
+                    out.write(new byte[] {(byte) 0xC0, 0x00});
+                    out.flush();
+                    lastWrite = clock.getAsLong();
+                }
             }
             throw new IOException("stopped");
         } catch (IOException e) {
             listener.onDisconnected(e);
+        } catch (RuntimeException e) {
+            listener.onDisconnected(new IOException("unreadable packet from the broker", e));
         }
     }
 

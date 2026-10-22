@@ -217,7 +217,9 @@ public class GlanceService extends Service {
         for (int attempt = 0; running && gen == generation; ) {
             fetchFrigateConfig();
             boolean[] connected = {false};
-            MqttClient client = new MqttClient(c.mqttUrl, clientId, topics, new MqttClient.Listener() {
+            MqttClient client;
+            try {
+                client = new MqttClient(c.mqttUrl, clientId, topics, new MqttClient.Listener() {
                 @Override
                 public void onConnected() {
                     connected[0] = true;
@@ -238,6 +240,10 @@ public class GlanceService extends Service {
                     updateStatus();
                 }
             });
+            } catch (RuntimeException e) {
+                Log.w(TAG, "mqtt error: the mqtt address in the config is not usable");
+                return;
+            }
             mqtt = client;
             client.run(SocketFactory.getDefault());
             if (connected[0]) attempt = 0;

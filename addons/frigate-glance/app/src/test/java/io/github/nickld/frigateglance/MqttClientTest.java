@@ -146,4 +146,25 @@ public class MqttClientTest {
         assertEquals(60_000, MqttClient.backoffMs(10));
         assertEquals(60_000, MqttClient.backoffMs(100));
     }
+
+    @Test
+    public void pingsDuringSteadyTrafficSoTheBrokerKeepsUs() {
+        // Messages every 20 s never let a 30 s read time out; the client must still ping within the keep-alive.
+        byte[] pub = publish("frigate/events", "x".getBytes(StandardCharsets.UTF_8));
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        long[] now = {0};
+        MqttClient client = new MqttClient("mqtt://broker", "t", TOPICS, new Recorder(), () -> now[0] += 20_000);
+        client.session(new ByteArrayInputStream(concat(CONNACK_OK, SUBACK, pub, pub, pub, pub)), sent);
+        byte[] b = sent.toByteArray();
+        boolean ping = false;
+        for (int i = 0; i + 1 < b.length; i++) if ((b[i] & 0xff) == 0xC0 && b[i + 1] == 0) ping = true;
+        assertTrue("PINGREQ sent while messages kept arriving", ping);
+    }
+
+    @Test
+    public void badBrokerPacketEndsTheSessionInsteadOfCrashing() {
+        byte[] broken = {0x30, 0x02, 0x00, 0x09};   // topic length 9 but no topic bytes
+        Recorder r = runAgainst(concat(CONNACK_OK, SUBACK, broken), new ByteArrayOutputStream(), "mqtt://broker");
+        assertNotNull(r.cause);
+    }
 }

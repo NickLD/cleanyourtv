@@ -67,6 +67,7 @@ final class OverlayCard implements CardView {
     private TextureView video;
     private LiveVideo live;
     private boolean refreshing;
+    private int refreshLoop;
     private BoxView boxes;
     /** Peek's timer bar: red and full while the event goes on, white and shrinking once it has ended. */
     private View timerBar;
@@ -142,20 +143,26 @@ final class OverlayCard implements CardView {
         live.start(url, video);
     }
 
+    /**
+     * A new snapshot a second after the last one arrived (or failed), never more than one in flight, so a slow
+     * Frigate is not buried in requests. One loop per card: a newer loop or stopPicture ends the old one.
+     */
     private void refresh(String id, String camera) {
         refreshing = true;
+        int loop = ++refreshLoop;
         main.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (!refreshing || root == null || !id.equals(reviewId)) return;
-                loadSnapshot(id, camera);
-                main.postDelayed(this, SNAPSHOT_REFRESH_MS);
+                if (!refreshing || loop != refreshLoop || root == null || !id.equals(reviewId)) return;
+                Runnable again = this;
+                loadSnapshot(id, camera, () -> main.postDelayed(again, SNAPSHOT_REFRESH_MS));
             }
         }, SNAPSHOT_REFRESH_MS);
     }
 
     private void stopPicture() {
         refreshing = false;
+        refreshLoop++;
         if (live != null) {
             live.release();
             live = null;
@@ -263,7 +270,12 @@ final class OverlayCard implements CardView {
     }
 
     void loadSnapshot(String id, String camera) {
+        loadSnapshot(id, camera, null);
+    }
+
+    private void loadSnapshot(String id, String camera, Runnable done) {
         loader.execute(() -> {
+            if (!id.equals(reviewId)) return;   // the card it was for has gone
             try {
                 byte[] jpeg = source.snapshot(camera);
                 Bitmap bmp = decode(jpeg);
@@ -276,6 +288,8 @@ final class OverlayCard implements CardView {
             } catch (IOException | RuntimeException e) {
                 if (!snapshotLogged) Log.w(ConfigStore.TAG, "frigate error: snapshot " + camera + ": " + e.getMessage());
                 snapshotLogged = true;
+            } finally {
+                if (done != null) main.post(done);
             }
         });
     }
