@@ -149,7 +149,8 @@ public class GlanceService extends Service {
     static String liveUrl(String camera) {
         GlanceService s = instance;
         GlanceConfig cfg = s == null ? null : s.config;
-        if (cfg == null) return null;
+        // A debug replay plays a recording inside Frigate; go2rtc has no stream for it, so there is no live video.
+        if (cfg == null || camera.startsWith(ReviewFilter.REPLAY_PREFIX)) return null;
         String stream = cfg.streams.containsKey(camera) ? cfg.streams.get(camera) : s.streamFor(camera);
         return LiveVideo.rtspUrl(cfg.frigateHost(), cfg.rtspUser, cfg.rtspPassword, stream);
     }
