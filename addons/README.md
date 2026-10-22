@@ -9,9 +9,10 @@ the core bigger or change how it behaves. You install an add-on only if you want
 
 | Add-on | What it does | Author | Tested on | Permissions |
 |---|---|---|---|---|
+| [Frigate Glance](frigate-glance/) | Frigate camera pop-ups over whatever is playing | NickLD | TCL 65Q650G | overlay, accessibility (two keys), network, foreground service |
 
-None yet. A widget, an info tile, a storage or smart-home card: if it can live as its own small app,
-it can live here. See the rules below.
+A widget, an info tile, a storage or smart-home card: if it can live as its own small app, it can live
+here. See the rules below.
 
 ## How an add-on works
 
