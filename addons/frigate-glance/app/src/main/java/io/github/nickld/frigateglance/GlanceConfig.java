@@ -34,6 +34,8 @@ public final class GlanceConfig {
     /** Object labels that may open a card; empty means every label. */
     public final Set<String> labels;
     public final int dismissSeconds, snoozeMinutes;
+    /** Card size in percent of the standard card (picture, text and bar together). */
+    public final int cardScale;
     public final boolean liveVideo, boxes;
 
     private final JSONObject source;
@@ -51,6 +53,7 @@ public final class GlanceConfig {
         severity = oneOf(o.optString("severity", "alerts"), SEVERITIES, "alerts");
         dismissSeconds = clamp(o.optInt("dismissSeconds", 8), 1, 120);
         snoozeMinutes = clamp(o.optInt("snoozeMinutes", 60), 5, 720);
+        cardScale = clamp(o.optInt("cardScale", 100), 50, 200);
         liveVideo = o.optBoolean("liveVideo", true);
         boxes = o.optBoolean("boxes", true);
         dismissKey = key(o, "dismissKey", "KEYCODE_DPAD_LEFT");
@@ -107,6 +110,7 @@ public final class GlanceConfig {
             o.put("corner", corner);
             o.put("dismissSeconds", dismissSeconds);
             o.put("snoozeMinutes", snoozeMinutes);
+            o.put("cardScale", cardScale);
             o.put("liveVideo", liveVideo);
             o.put("boxes", boxes);
             o.put("dismissKey", dismissKey);

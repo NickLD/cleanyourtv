@@ -66,6 +66,7 @@ and `TestCardReceiver` shows a test card over whatever is playing.
 | `labels` | `[]` (all) | objects that may open a card, e.g. `["person"]` |
 | `severity` | `alerts` | `alerts`, or `alerts_and_detections` |
 | `corner` | `top-right` | `top-left`, `bottom-left`, `bottom-right` |
+| `cardScale` | `100` | card size in percent (50 to 200), picture and text together |
 | `dismissSeconds` | `8` | seconds the card stays after the event ends (1 to 120) |
 | `snoozeMinutes` | `60` | length of a snooze (5 to 720) |
 | `liveVideo` | `true` | live picture from go2rtc's RTSP port 8554; `false` refreshes a snapshot every second |

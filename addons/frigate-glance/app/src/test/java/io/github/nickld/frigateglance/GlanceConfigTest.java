@@ -167,4 +167,12 @@ public class GlanceConfigTest {
             assertFalse(e.getMessage(), e.getMessage().contains("secretpw"));
         }
     }
+
+    @Test
+    public void cardScaleDefaultsTo100AndIsClamped() {
+        assertEquals(100, GlanceConfig.parse("{" + REQUIRED + "}").cardScale);
+        assertEquals(130, GlanceConfig.parse(requiredPlus("\"cardScale\":130")).cardScale);
+        assertEquals(50, GlanceConfig.parse(requiredPlus("\"cardScale\":10")).cardScale);
+        assertEquals(200, GlanceConfig.parse(requiredPlus("\"cardScale\":900")).cardScale);
+    }
 }

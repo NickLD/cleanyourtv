@@ -325,8 +325,8 @@ final class OverlayCard implements CardView {
                         | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT);
         p.gravity = gravity(config.corner);
-        p.x = px(MARGIN_DP);
-        p.y = px(MARGIN_DP);
+        p.x = Math.round(MARGIN_DP * dp);   // the gap from the screen edge does not grow with the card
+        p.y = Math.round(MARGIN_DP * dp);
         p.setTitle("Frigate Glance");
         return p;
     }
@@ -353,7 +353,7 @@ final class OverlayCard implements CardView {
 
     private TextView text(int sp, int color, Typeface face) {
         TextView t = new TextView(context);
-        t.setTextSize(sp);
+        t.setTextSize(sp * scale());
         t.setTextColor(color);
         t.setTypeface(face);
         t.setSingleLine(true);
@@ -361,8 +361,13 @@ final class OverlayCard implements CardView {
         return t;
     }
 
+    /** Card dimensions in pixels, at the card size chosen in the settings (cardScale). */
     private int px(int dps) {
-        return Math.round(dps * dp);
+        return Math.round(dps * dp * scale());
+    }
+
+    private float scale() {
+        return config.cardScale / 100f;
     }
 
     private void removeQuietly(View v) {

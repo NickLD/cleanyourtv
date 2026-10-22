@@ -103,4 +103,11 @@ public class SettingsModelTest {
         assertEquals(Integer.valueOf(120), SettingsModel.next(SettingsModel.SNOOZE_MINUTES, 60));
         assertEquals(Integer.valueOf(15), SettingsModel.next(SettingsModel.SNOOZE_MINUTES, 240));
     }
+
+    @Test
+    public void cardSizeCycles() {
+        assertEquals(Integer.valueOf(115), SettingsModel.next(SettingsModel.CARD_SCALES, 100));
+        assertEquals(Integer.valueOf(70), SettingsModel.next(SettingsModel.CARD_SCALES, 150));
+        assertEquals(Integer.valueOf(70), SettingsModel.next(SettingsModel.CARD_SCALES, 123));
+    }
 }

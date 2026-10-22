@@ -194,6 +194,8 @@ public class SettingsActivity extends Activity {
             case "Card":
                 row("Show a test card", "Shows a card now, to check where it sits and that the remote buttons work.", "", () -> GlanceService.showTestCard(this, null));
                 divider();
+                row("Card size", "How big the card is, picture and text together.", c.cardScale + "%", () -> save(cfg ->
+                        store.saveSetting("cardScale", SettingsModel.next(SettingsModel.CARD_SCALES, cfg.cardScale))));
                 row("Corner", "Which corner of the screen the card slides into.", CORNER_NAMES.get(c.corner),
                         () -> save(cfg -> store.saveSetting("corner", SettingsModel.next(SettingsModel.CORNERS, cfg.corner))));
                 row("Card stays", "How long the card stays once the event has ended, while the bar on top runs down.",
