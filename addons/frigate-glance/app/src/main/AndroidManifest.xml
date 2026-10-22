@@ -53,6 +53,12 @@
                 android:resource="@xml/key_service" />
         </service>
 
+        <provider
+            android:name=".ConfigProvider"
+            android:authorities="${applicationId}.config"
+            android:exported="true"
+            android:permission="android.permission.WRITE_SECURE_SETTINGS" />
+
         <receiver
             android:name=".TestCardReceiver"
             android:exported="true"

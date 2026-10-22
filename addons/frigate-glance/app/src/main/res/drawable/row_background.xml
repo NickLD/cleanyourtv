@@ -8,6 +8,13 @@
             <corners android:radius="12dp" />
         </shape>
     </item>
+    <!-- The menu's current section while focus is on its rows. -->
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#1AFFFFFF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
     <item>
         <shape android:shape="rectangle">
             <solid android:color="#00000000" />
