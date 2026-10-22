@@ -285,4 +285,19 @@ public class CardControllerTest {
                 Map.of("frontdoooor", new int[] {100, 100})));
         assertEquals(0, view.lastModel.boxes.size());
     }
+
+    @Test
+    public void replayCardLeavesSoonAfterTheReplayGoesQuiet() {
+        // Stopping a replay removes its camera with no "end": the card must not wait the full 120 s.
+        c.onReview(Review.fromReplayEvent("{\"type\":\"new\",\"after\":{\"id\":\"e1\",\"camera\":\"_replay_shop\",\"label\":\"person\"}}"));
+        assertTrue(c.isShowing());
+        now += 10_000;
+        c.onReview(Review.fromReplayEvent("{\"type\":\"update\",\"after\":{\"id\":\"e1\",\"camera\":\"_replay_shop\",\"label\":\"person\"}}"));
+        now += 14_999;
+        c.tick();
+        assertTrue(c.isShowing());
+        now += 2;
+        c.tick();
+        assertFalse(c.isShowing());
+    }
 }

@@ -16,6 +16,8 @@ import java.util.function.LongSupplier;
  */
 public final class CardController {
     static final long HARD_LIMIT_MS = 120_000;
+    /** A replay's camera can vanish without an "end"; its card leaves this long after its last message. */
+    static final long REPLAY_QUIET_MS = 15_000;
     static final String TEST_ID = "test";
     private static final long TEST_EXTRA_MS = 10_000;
 
@@ -60,12 +62,12 @@ public final class CardController {
             if (shown != null) closed.add(shown.id);
             shown = r;
             detections.clear();
-            deadline = now + HARD_LIMIT_MS;
+            deadline = now + quietLimit(r);
             ending = false;
             view.show(model());
         } else if (isShown && "update".equals(r.type)) {
             shown = r;
-            deadline = now + HARD_LIMIT_MS;
+            deadline = now + quietLimit(r);
             ending = false;
             view.update(model());
         } else if (isShown && "end".equals(r.type)) {
@@ -74,6 +76,10 @@ public final class CardController {
             ending = true;
             view.update(model());
         }
+    }
+
+    private static long quietLimit(Review r) {
+        return r.camera.startsWith(ReviewFilter.REPLAY_PREFIX) ? REPLAY_QUIET_MS : HARD_LIMIT_MS;
     }
 
     public void onDetection(Detection d) {
