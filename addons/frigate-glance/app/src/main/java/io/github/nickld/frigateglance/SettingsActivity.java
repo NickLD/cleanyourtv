@@ -216,7 +216,16 @@ public class SettingsActivity extends Activity {
         int index = focused == null ? -1 : rows.indexOfChild(focused);
         change.apply(c);
         GlanceService.settingsChanged(this);
+        // Removing the old rows would hand focus to the menu on the left, which reads as backing out of the
+        // section; keep the menu out of reach while the rows are rebuilt, then put focus back on the same row.
+        menu.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
         buildRows(index);
+        menu.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        if (index >= 0 && index < rows.getChildCount()) {
+            View again = rows.getChildAt(index);
+            again.requestFocus();
+            rows.post(again::requestFocus);
+        }
     }
 
     private SettingRow row(String name, String value, Runnable onClick) {
